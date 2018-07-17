@@ -25,6 +25,7 @@ dependencies:
 - text
 - bytestring
 - http-conduit
+- hlint
 
 library:
   source-dirs: src

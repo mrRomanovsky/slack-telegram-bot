@@ -1,2 +1,2 @@
- { "token"  : "myToken"
+ { "token"  : "685994346:AAF1gb675pklyGI_6QC-wcS4xXMkmUQQ8dE"
  , "repeats"   : 3 }
