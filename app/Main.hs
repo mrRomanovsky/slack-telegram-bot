@@ -55,8 +55,11 @@ processUpdates botUrl lastId updates = case result updates of
 
 sendMessage :: String -> Integer -> String -> IO ()
 sendMessage botUrl chatId txt = do
+  let textToSend = case txt of
+        "\\help" -> "bot help message"
+        _        -> txt
   let sendUrl = botUrl ++ "sendMessage?chat_id="
-             ++ show chatId ++ "&text=" ++ txt
+             ++ show chatId ++ "&text=" ++ textToSend
   simpleHttp sendUrl
   return ()
 

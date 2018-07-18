@@ -5,6 +5,7 @@ import Data.Aeson
 import GHC.Generics
 
 data Config = Config { token   :: String,
+                       help    :: String,
                        repeats :: Int} deriving (Show, Generic)
 
 instance FromJSON Config

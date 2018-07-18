@@ -1,2 +1,3 @@
  { "token"  : "685994346:AAF1gb675pklyGI_6QC-wcS4xXMkmUQQ8dE"
+ , "help"   : "Echo bot. Repeats every message n times (default : 3). To change n write /repeat"
  , "repeats"   : 3 }
