@@ -46,13 +46,7 @@ processUpdates c botUrl lastId updates = case result updates of
   [] -> return lastId
   rs -> do
     let mess = findLastMessage lastId rs
-    maybe (return lastId) (sendMessage c botUrl) mess--(IO Int -> (Message -> IO Int) -> IO Int)    
-    {-let mes = message $ last $ result  updates
-        mesId = message_id mes
-        chatId = chat_id $ chat mes
-        txt = text mes-}
-    --when (mesId > lastId) $ sendMessage c botUrl chatId txt
-    --return $ max mesId lastId
+    maybe (return lastId) (sendMessage c botUrl) mess
 
 findLastMessage :: Integer -> [Update] -> Maybe Message
 findLastMessage oldId [] = Nothing
