@@ -27,6 +27,8 @@ dependencies:
 - http-conduit
 - hlint
 - mtl
+- template-haskell
+- http-client
 
 library:
   source-dirs: src

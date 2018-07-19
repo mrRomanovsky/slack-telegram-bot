@@ -7,7 +7,7 @@ import Config
 import TelegramJson
 import Control.Monad
 import Data.Aeson
-import Network.HTTP.Conduit (simpleHttp, HttpException)
+import Network.HTTP.Conduit hiding (httpLbs)
 import Control.Concurrent (threadDelay)
 import qualified Data.ByteString.Lazy as B
 import Control.Monad.State
@@ -35,8 +35,8 @@ checkUpdates c getUpdates botUrl = do
         upd -> eitherDecode upd :: Either String Updates
   newId <- liftIO $ either (handleError oldId) (processUpdates c botUrl oldId) updates --maybe I should build request strings only once, somewhere above
   put newId
-  liftIO $ threadDelay 1000 --remove this later!
   checkUpdates c getUpdates botUrl
+  --liftIO $ threadDelay 1000 --remove this later!
 
 handleHttpException :: SomeException -> B.ByteString --add normal exception handling
 handleHttpException e = ""
@@ -44,24 +44,33 @@ handleHttpException e = ""
 processUpdates :: Config -> String -> Integer -> Updates -> IO Integer
 processUpdates c botUrl lastId updates = case result updates of
   [] -> return lastId
-  rs -> do    
-    let mes = message $ last $ result  updates
-        mesId = message_id mes
-        chatId = chat_id $ chat mes
-        txt = text mes
-    when (mesId > lastId) $ sendMessage c botUrl chatId txt
-    return $ max mesId lastId
+  rs -> do
+    let mess = findLastMessage lastId rs
+    maybe (return lastId) (sendMessage c botUrl) mess
 
+findLastMessage :: Integer -> [Update] -> Maybe Message
+findLastMessage oldId [] = Nothing
+findLastMessage oldId (x:xs) =
+  let mess = message x
+      messId = message_id mess
+      in if messId > oldId then Just mess
+                           else findLastMessage oldId xs
 
-sendMessage :: Config -> String -> Integer -> String -> IO ()
-sendMessage Config{help = h, repeats = r} botUrl chatId txt = do
-  let textToSend = case txt of
+keyboard :: String
+keyboard = "&reply_markup={\"keyboard\":[[\"Yes\",\"No\"],[\"Maybe\"],[\"1\",\"2\",\"3\"]]}"
+
+sendMessage :: Config -> String -> Message -> IO Integer
+sendMessage Config{help = h, repeats = r} botUrl mess = do
+  let txt = text mess
+      textToSend = case txt of
         "/help" -> h
+        "/repeat" -> "test" ++ keyboard
         _        -> txt
   let sendUrl = botUrl ++ "sendMessage?chat_id="
-             ++ show chatId ++ "&text=" ++ textToSend
+             ++ show (chat_id $ chat mess) ++ "&text=" ++ textToSend
+  putStrLn sendUrl
   simpleHttp sendUrl
-  return ()
+  return $ message_id mess
 
 handleError :: Integer -> String -> IO Integer
 handleError id err = do
