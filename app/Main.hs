@@ -9,6 +9,8 @@ import Control.Monad
 import Data.Aeson
 import Network.HTTP.Conduit hiding (httpLbs)
 import Control.Concurrent (threadDelay)
+import Lib
+import Data.ByteString.Char8 (pack)
 import qualified Data.ByteString.Lazy as B
 import Control.Monad.State
 import Control.Exception
@@ -50,11 +52,15 @@ processUpdates c botUrl lastId updates = case result updates of
 
 findLastMessage :: Integer -> [Update] -> Maybe Message
 findLastMessage oldId [] = Nothing
-findLastMessage oldId (x:xs) =
+findLastMessage oldId l = let mess = message $ last l 
+                              messId = message_id mess
+                              in if messId > oldId then Just mess
+                                                   else Nothing
+{-findLastMessage oldId (x:xs) =
   let mess = message x
       messId = message_id mess
       in if messId > oldId then Just mess
-                           else findLastMessage oldId xs
+                           else findLastMessage oldId xs-}
 
 keyboard :: String
 keyboard = "&reply_markup={\"keyboard\":[[\"Yes\",\"No\"],[\"Maybe\"],[\"1\",\"2\",\"3\"]]}"
@@ -66,10 +72,11 @@ sendMessage Config{help = h, repeats = r} botUrl mess = do
         "/help" -> h
         "/repeat" -> "test" ++ keyboard
         _        -> txt
-  let sendUrl = botUrl ++ "sendMessage?chat_id="
+  {-let sendUrl = botUrl ++ "sendMessage?chat_id="
              ++ show (chat_id $ chat mess) ++ "&text=" ++ textToSend
-  putStrLn sendUrl
-  simpleHttp sendUrl
+  putStrLn sendUrl-}
+  send (botUrl ++ "sendMessage") (RequestBodyBS $ pack $ "chat_id="++ show (chat_id $ chat mess) ++ "&text=" ++ textToSend)
+  --simpleHttp sendUrl
   return $ message_id mess
 
 handleError :: Integer -> String -> IO Integer
