@@ -25,7 +25,25 @@ send url s = do
   request <- buildRequest url s
   response <- httpLbs request manager
   return ()
-       
+
+buildRequestSlack :: String -> RequestBody -> IO Request
+buildRequestSlack url body = do
+  nakedRequest <- parseRequest url
+  return
+    (nakedRequest
+       { method = "POST"
+       , requestBody = body
+       , requestHeaders = [(HTTP.hContentType, "application/x-www-form-urlencoded")]
+       })
+
+sendSlack :: String -> RequestBody -> IO ()
+sendSlack url s = do
+  let logManager =
+        tlsManagerSettings {managerModifyRequest = \r -> print r >> return r}
+  manager <- newManager logManager
+  request <- buildRequestSlack url s
+  response <- httpLbs request manager
+  return ()       
   --let Just obj = decode (responseBody response)
   --print (obj :: Object)
 
