@@ -5,7 +5,9 @@ module Lib where
 import Data.Aeson
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS (tlsManagerSettings)
+import Data.ByteString.Char8 (pack)
 import qualified Network.HTTP.Types as HTTP
+import Data.ByteString.Lazy (ByteString)
 
 buildRequest :: String -> RequestBody -> IO Request
 buildRequest url body = do
@@ -26,24 +28,24 @@ send url s = do
   response <- httpLbs request manager
   return ()
 
-buildRequestSlack :: String -> RequestBody -> IO Request
-buildRequestSlack url body = do
+buildRequestSlack :: String -> String -> IO Request
+buildRequestSlack url query = do
   nakedRequest <- parseRequest url
   return
     (nakedRequest
-       { method = "POST"
-       , requestBody = body
+       { method = "GET"
        , requestHeaders = [(HTTP.hContentType, "application/x-www-form-urlencoded")]
+       , queryString = pack query
        })
 
-sendSlack :: String -> RequestBody -> IO ()
+sendSlack :: String -> String -> IO ByteString
 sendSlack url s = do
   let logManager =
         tlsManagerSettings {managerModifyRequest = \r -> print r >> return r}
   manager <- newManager logManager
   request <- buildRequestSlack url s
   response <- httpLbs request manager
-  return ()       
+  return $ responseBody response       
   --let Just obj = decode (responseBody response)
   --print (obj :: Object)
 

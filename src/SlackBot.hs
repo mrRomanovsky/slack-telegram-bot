@@ -41,11 +41,16 @@ getMessages :: SlackConfig -> IO (Maybe [SlackMessage])
 getMessages SlackConfig{token = t, channel = c} = do
   let getHistory = "https://slack.com/api/channels.history?token="
                 ++ t ++ "&channel=" ++ c
-  messagesStr <- catch (simpleHttp getHistory) $ return . handleHttpException
+  messagesStr <- catch (sendSlack "https://slack.com/api/channels.history" $
+    "token=" ++ t ++ "&channel=" ++ c) $ return . handleHttpException
+  print messagesStr
   let messagesParsed = case messagesStr of
         "" -> Left "Didn't get an answer for request, but I'm still working!"
         msg -> eitherDecode msg :: Either String SlackResponse
   return $ either (const Nothing) (Just . messages) messagesParsed
 
 handleHttpException :: SomeException -> B.ByteString --add normal exception handling
-handleHttpException e = ""
+handleHttpException e = "Something went wrong"
+
+myConfig = SlackConfig "MY_TOKEN" "CHAT_ID"
+
