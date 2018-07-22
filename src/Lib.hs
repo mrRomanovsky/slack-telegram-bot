@@ -38,6 +38,27 @@ buildRequestSlack url query = do
        , queryString = pack query
        })
 
+buildPostRequestSlack :: String -> RequestBody -> String -> IO Request
+buildPostRequestSlack url body botToken = do
+  nakedRequest <-parseRequest url
+  return
+    (nakedRequest
+       {method = "POST"
+      , requestBody = body
+      , requestHeaders = [ (HTTP.hContentType, "application/json")
+                         , (HTTP.hAuthorization, pack $ "Bearer " ++ botToken) ]
+      })
+
+postMessageSlack :: String -> RequestBody -> String -> IO ()
+postMessageSlack url body botToken = do
+  let logManager =
+        tlsManagerSettings {managerModifyRequest = \r -> print r >> return r}
+  manager <- newManager logManager
+  request <- buildPostRequestSlack url body botToken
+  response <- httpLbs request manager
+  print response
+  --return ()
+
 sendSlack :: String -> String -> IO ByteString
 sendSlack url s = do
   let logManager =
