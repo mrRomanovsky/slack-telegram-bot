@@ -1,12 +1,12 @@
 {-# LANGUAGE DeriveGeneric #-}
 
-module Config where
+module TelegramConfig where
 import Data.Aeson
 import GHC.Generics
 
-data Config = Config { token   :: String,
+data TelegramConfig = TelegramConfig { token   :: String,
                        help    :: String,
                        repeats :: Int} deriving (Show, Generic)
 
-instance FromJSON Config
-instance ToJSON Config
+instance FromJSON TelegramConfig
+instance ToJSON TelegramConfig

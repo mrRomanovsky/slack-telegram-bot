@@ -3,17 +3,36 @@
 
 module EchoBot where
 
-class (BotMessage m, BotConfig c) => EchoBot b m c | b -> m, b -> c where
+import Control.Monad.State
+
+class EchoBot b m c | b -> m, b -> c where
   getBotWithConfig :: c -> b
 
-  getLastMessage :: b -> IO m
-  
-  sendText :: String -> b -> IO ()
+  getLastMessage :: StateT b IO (Maybe m)
 
-  sendRepeatsSelect :: b -> IO ()
+  processMessage :: m -> b -> IO ()
 
-  sendKeyboard :: b -> IO ()
 
+{-
+checkUpdates :: TelegramConfig -> String -> String -> StateT Integer IO ()
+checkUpdates c getUpdates botUrl = do
+  oldId <- get
+  updatesStr <- liftIO $ catch (simpleHttp getUpdates) $ return . handleHttpException
+  let updates = case updatesStr of
+        "" -> Left "Didn't get an answer for request, but I'm still working!"
+        upd -> eitherDecode upd :: Either String Updates
+  maybe (checkUpdates c getUpdates botUrl) (\mInfo -> do
+    let msg = mess mInfo
+    if wasRepeat mInfo
+       then checkUpdates c{repeats = getRepeats msg} getUpdates botUrl
+       else do
+         newId <- liftIO $ sendMessage c botUrl msg --maybe I should build request strings only once, somewhere above
+         put newId
+         checkUpdates c getUpdates botUrl) (processUpdates c botUrl oldId updates)
+-}
+
+
+{-
 class BotMessage m where
   getMessageText :: m -> String
 
@@ -29,3 +48,4 @@ class BotConfig c where
   setRepeatsCount :: Int -> c -> c
 
   getHelpMessage :: c -> String
+-}

@@ -3,7 +3,7 @@
 
 module Main where
 
-import Config
+import TelegramConfig
 import TelegramJson
 import Control.Monad
 import Data.Aeson
@@ -15,23 +15,23 @@ import qualified Data.ByteString.Lazy as B
 import Control.Monad.State
 import Control.Exception
 
-data MessageInfo = MessageInfo {mess :: Message,
+data MessageInfo = MessageInfo {mess :: TelegramMessage,
                                 wasRepeat :: Bool}
 
 main :: IO ()
 main = do
   putStrLn "telegram bot is running!"
   strConf <- B.readFile "app/config/config.txt"
-  let conf = eitherDecode strConf :: Either String Config
+  let conf = eitherDecode strConf :: Either String TelegramConfig
   either putStrLn startBot conf
 
-startBot :: Config -> IO ()
-startBot c@Config{token = t} = do
+startBot :: TelegramConfig -> IO ()
+startBot c@TelegramConfig{token = t} = do
   let botUrl = "https://api.telegram.org/bot" ++ t ++ "/"
       getUpdates = botUrl ++ "getUpdates"
   evalStateT (checkUpdates c getUpdates botUrl) 0 --maybe I should save id from previous session somewhere
 
-checkUpdates :: Config -> String -> String -> StateT Integer IO ()
+checkUpdates :: TelegramConfig -> String -> String -> StateT Integer IO ()
 checkUpdates c getUpdates botUrl = do
   oldId <- get
   updatesStr <- liftIO $ catch (simpleHttp getUpdates) $ return . handleHttpException
@@ -51,10 +51,10 @@ checkUpdates c getUpdates botUrl = do
 handleHttpException :: SomeException -> B.ByteString --add normal exception handling
 handleHttpException e = ""
 
-getRepeats :: Message -> Int
+getRepeats :: TelegramMessage -> Int
 getRepeats = read . text
 
-processUpdates :: Config -> String -> Integer -> Either String Updates -> Maybe MessageInfo
+processUpdates :: TelegramConfig -> String -> Integer -> Either String Updates -> Maybe MessageInfo
 processUpdates c botUrl lastId = either (const Nothing) (findLastMessage lastId . result) --case result updates of
 
 findLastMessage :: Integer -> [Update] -> Maybe MessageInfo --simplified version!!
@@ -80,8 +80,8 @@ findLastMessage oldId (x:xs) = findLastMessage oldId xs
 keyboard :: String
 keyboard = "\",\"reply_markup\": {\"keyboard\":[[\"1\",\"2\",\"3\",\"4\",\"5\"]],\"resize_keyboard\": true, \"one_time_keyboard\": true}}"
 
-sendMessage :: Config -> String -> Message -> IO Integer
-sendMessage c@Config{repeats = r} botUrl mess =
+sendMessage :: TelegramConfig -> String -> TelegramMessage -> IO Integer
+sendMessage c@TelegramConfig{repeats = r} botUrl mess =
   case text mess of
     "/help" -> sendInfo c botUrl mess
     "/repeat" -> sendInfo c botUrl mess
@@ -92,8 +92,8 @@ sendMessage c@Config{repeats = r} botUrl mess =
        replicateM_ r sendTxt
        return $ message_id mess
 
-sendInfo :: Config -> String -> Message -> IO Integer
-sendInfo Config{help = h, repeats = r} botUrl mess = do
+sendInfo :: TelegramConfig -> String -> TelegramMessage -> IO Integer
+sendInfo TelegramConfig{help = h, repeats = r} botUrl mess = do
   let txt = text mess
       textToSend = case txt of
         "/help" -> h ++ "\"}"

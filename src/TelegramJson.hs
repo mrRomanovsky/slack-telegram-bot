@@ -15,9 +15,9 @@ data Updates = Updates { ok     :: Bool,
                          result :: [Update] } deriving (Show, Generic)
 
 data Update = Update { update_id :: Integer,
-                       message   :: Message } deriving (Show, Generic)
+                       message   :: TelegramMessage } deriving (Show, Generic)
 
-data Message = Message { message_id :: Integer,
+data TelegramMessage = TelegramMessage { message_id :: Integer,
                          from :: User,
                          chat :: Chat,
                          date :: Integer,
@@ -71,9 +71,9 @@ instance FromJSON KeyboardButton where
 
 instance FromJSON Updates
 instance FromJSON Update
-instance FromJSON Message
+instance FromJSON TelegramMessage
 --instance FromJSON ReplyKeyboardMarkup
 instance ToJSON Updates
 instance ToJSON Update
-instance ToJSON Message
+instance ToJSON TelegramMessage
 --instance ToJSON ReplyKeyboardMarkup
