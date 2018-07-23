@@ -36,7 +36,7 @@ instance EchoBot TelegramBot TelegramMessage TelegramConfig where
     put $ maybe tBot (\msg -> tBot{lastMessId = message_id msg}) m
     return m
 
-  processMessage m TelegramBot{config = c, botUrl = bUrl} = do
+  processMessage b@TelegramBot{config = c, botUrl = bUrl} m = do
     let txt = text m
         textToSend = case txt of --implement option for parsing plain text!
           "/help"   -> help c ++ "\"}"
@@ -44,7 +44,7 @@ instance EchoBot TelegramBot TelegramMessage TelegramConfig where
           t         -> t ++ "\"}"
     send (bUrl ++ "sendMessage") (RequestBodyBS $ pack $ "{\"chat_id\": "++ show (chat_id $ chat m) ++
       ",\"text\": \"" ++ textToSend)
-    return () --maybe I don't need this line
+    return $ b{lastMessId = message_id m}
 
 
 keyboard :: String
