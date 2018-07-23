@@ -19,7 +19,7 @@ import Data.Maybe
 data SlackConfig = SlackConfig {token :: String,
                                 channel :: String} deriving (Show, Generic)
 
-botName = "BOT_NAME"
+botName = "MY_BOT_NAME"
 
 instance FromJSON SlackConfig
 instance ToJSON SlackConfig
@@ -79,15 +79,26 @@ getMessages SlackConfig{token = t, channel = c} = do
 sendPoll :: SlackConfig -> IO ()
 sendPoll c = sendText c "Select repeats count:\n\n:one: :two: :three: :four: :five:"
 
-getPollAnswer :: SlackConfig -> IO Int
+getPollAnswer :: SlackConfig -> IO (Either String ReactionsResponse)
 getPollAnswer SlackConfig{token = t, channel = c} = do
   answerStr <- catch (sendSlack "https://slack.com/api/reactions.get" $
-    "token=" ++ botName ++ "&channel=" ++ c ++
+    "token=" ++ "BOT_TOKEN" ++ "&channel=" ++ c ++
      "&full=true&timestamp=1532275649.000040") $ return . handleHttpException
-  print answerStr
-  return (-1)
+  return (eitherDecode answerStr :: Either String ReactionsResponse)
+  --print answerStr
+  --return (-1)
+
+getRepeatsCount :: Either String ReactionsResponse -> Maybe Int
+getRepeatsCount = either (const Nothing) $ getAnswer . reactions . message
+  where
+    getAnswer = maybe Nothing $ parseAnswer . name . head
+    parseAnswer "one" = Just 1
+    parseAnswer "two" = Just 2
+    parseAnswer "three" = Just 3
+    parseAnswer "four" = Just 4
+    parseAnswer "five" = Just 5
 
 handleHttpException :: SomeException -> B.ByteString --add normal exception handling
 handleHttpException e = "Something went wrong"
 
-myConfig = SlackConfig "MY_TOKEN" "MY_CHAT_ID"
+myConfig = SlackConfig "USER_TOKEN" "CHAT_ID"
