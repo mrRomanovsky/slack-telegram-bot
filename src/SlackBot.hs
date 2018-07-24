@@ -1,7 +1,5 @@
 {-# LANGUAGE OverloadedStrings#-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
---{-# LANGUAGE RecordWildCards #-}
 
 module SlackBot where
 
@@ -10,32 +8,16 @@ import Control.Monad
 import Data.Aeson
 import Network.HTTP.Conduit hiding (httpLbs)
 import Lib
+import SlackConfig
 import Data.ByteString.Char8 (pack)
 import qualified Data.ByteString.Lazy as B
 import Control.Monad.State
-import GHC.Generics
 import Control.Exception
 import Data.Maybe
 import Control.Applicative ((<|>))
 import Data.List (isPrefixOf)
 import EchoBot
 import Data.Char (isSpace)
-
-data SlackConfig = 
-  SlackConfig { botToken  :: String
-              , botName   :: String
-              , userToken :: String     
-              , channel :: String
-              , repeats :: Int
-              , help :: String} deriving (Show, Generic)
-
-data ValidSlackMessage = TextMessage SlackTextMessage | RepeatsCount Int
-
-getTs :: String -> ValidSlackMessage -> String
-getTs _ (TextMessage m) = tStamp m
-getTs def _             = ""
-
-data SlackTextMessage = SlackTextMessage {validText :: String, tStamp :: String} 
 
 data SlackBot = SlackBot { config :: SlackConfig 
                          , lastMessageTs :: String
@@ -80,12 +62,6 @@ getLastTextMessage sb@SlackBot{config = c} = do
   messagesInfo <- getMessages c
   return $ getLastUserMessage sb messagesInfo
 
-{-validateSlackMessage :: SlackMessage -> Maybe ValidSlackMessage
-validateSlackMessage sm = do
-  t <- text sm
-  let timeStamp = ts sm
-  return $ TextMessage $ SlackTextMessage t timeStamp-}
-
 getLastUserMessage :: SlackBot -> [SlackMessage] -> Maybe ValidSlackMessage
 getLastUserMessage _ [] = Nothing
 getLastUserMessage b@SlackBot{config = c, lastMessageTs = lastTs} (x:xs) = 
@@ -99,19 +75,12 @@ parseTextMessage bot lastTs SlackMessage{messageType = mt, user = u, text = t, t
      then parseMessageToBot ("<@" ++ bot ++">") $ fromJust t
      else Nothing
               
-
 parseMessageToBot :: String -> String -> Maybe String
 parseMessageToBot [] s = Just $ dropWhile isSpace s
 parseMessageToBot (x:xs) [] = Nothing
 parseMessageToBot (x:xs) (y:ys)
   |x == y = parseMessageToBot xs ys
   |otherwise = Nothing
---parseMessageToBot bot str = ("<@>" ++ bot) `isPrefixOf` str
-
---botName = "MY_BOT_NAME"
-
-instance FromJSON SlackConfig
-instance ToJSON SlackConfig
 
 sendText :: SlackConfig -> String -> IO ()
 sendText sc@SlackConfig{botToken = t, channel = c} txt =
@@ -131,7 +100,7 @@ getMessages SlackConfig{userToken = t, channel = c} = do
 sendPoll :: SlackConfig -> IO ()
 sendPoll c = sendText c "Select repeats count:\n\n:one: :two: :three: :four: :five:"
 
-getPollAnswer :: SlackBot -> IO (Either String ReactionsResponse) --I need timestamp of the question
+getPollAnswer :: SlackBot -> IO (Either String ReactionsResponse)
 getPollAnswer SlackBot{config = SlackConfig{botToken = t, channel = c}, repeastsMessageTs = rTs} = do
   answerStr <- catch (sendSlack "https://slack.com/api/reactions.get" $
     "token=" ++ t ++ "&channel=" ++ c ++
@@ -148,7 +117,7 @@ getRepeatsCount = either (const Nothing) $ getAnswer . reactions . message
     parseAnswer "four" = Just 4
     parseAnswer "five" = Just 5
 
-handleHttpException :: SomeException -> B.ByteString --add normal exception handling
+handleHttpException :: SomeException -> B.ByteString
 handleHttpException e = "Something went wrong"
 
 mySlackConfig = SlackConfig "xoxb-403965130790-402459105700-tTSoVZoJH6TTfDb51QhkUiC5"
