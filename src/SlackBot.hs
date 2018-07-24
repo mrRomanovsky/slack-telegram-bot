@@ -88,7 +88,7 @@ sendText sc@SlackConfig{botToken = t, channel = c} txt =
    "{\"channel\":\"" ++ c ++ "\",\"text\":\"" ++ txt ++ "\"}") t
 
 getMessages :: SlackConfig -> IO [SlackMessage]
-getMessages SlackConfig{userToken = t, channel = c} = do
+getMessages SlackConfig{appToken = t, channel = c} = do
   messagesStr <- catch (sendSlack "https://slack.com/api/channels.history" $
     "token=" ++ t ++ "&channel=" ++ c) $ return . handleHttpException
   print messagesStr

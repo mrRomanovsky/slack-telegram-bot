@@ -7,7 +7,7 @@ import Data.Aeson
 data SlackConfig = 
   SlackConfig { botToken  :: String
               , botName   :: String
-              , userToken :: String     
+              , appToken :: String     
               , channel :: String
               , repeats :: Int
               , help :: String} deriving (Show, Generic)
