@@ -51,7 +51,6 @@ instance EchoBot TelegramBot TelegramMessage TelegramConfig where
       t         -> if not wr || t `notElem` keyboardAnswers
                       then replicateM_ (repeats c) (sendTxt $ t ++ "\"}") >> returnBot False
                       else return $ changeRepeats b mId $ read txt
-    --return $ b{lastMessId = message_id m}
 
 changeRepeats :: TelegramBot -> Integer -> Int -> TelegramBot
 changeRepeats b@TelegramBot{config = c} newId r =
@@ -70,9 +69,9 @@ keyboardAnswers :: [String]
 keyboardAnswers = ["1", "2", "3", "4", "5"]
 
 processUpdates :: TelegramConfig -> Integer -> Either String Updates -> Maybe TelegramMessage
-processUpdates c lastId = either (const Nothing) (findLastMessage lastId . result) --case result updates of
+processUpdates c lastId = either (const Nothing) (findLastMessage lastId . result)
 
-findLastMessage :: Integer -> [Update] -> Maybe TelegramMessage --simplified version!!
+findLastMessage :: Integer -> [Update] -> Maybe TelegramMessage
 findLastMessage oldId [] = Nothing
 findLastMessage oldId (x:xs) = let mess = message x
                                    messId = message_id mess
@@ -80,15 +79,5 @@ findLastMessage oldId (x:xs) = let mess = message x
                                          then Just mess
                                          else findLastMessage oldId xs
 
-handleHttpException :: SomeException -> B.ByteString --add normal exception handling
+handleHttpException :: SomeException -> B.ByteString
 handleHttpException e = ""
-
-{-instance BotMessage TelegramMessage where
-  getMessageText = text
-
-instance BotConfig TelegramConfig where
-  getRepeatsCount = repeats
-
-  setRepeatsCount rc tc = tc{repeats = rc}
-
-  getHelpMessage = help-}

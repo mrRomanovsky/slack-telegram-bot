@@ -8,7 +8,7 @@ import Control.Monad.State
 class EchoBot b m c | b -> m, b -> c, m -> b, c -> b, m -> c, c -> m where
   getBotWithConfig :: c -> b
 
-  getLastMessage :: StateT b IO (Maybe m)
+  getLastMessage :: StateT b IO (Maybe m) --will be used for logging
 
   processMessage :: b -> m -> IO b
 

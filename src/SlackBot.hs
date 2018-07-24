@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings#-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 --{-# LANGUAGE RecordWildCards #-}
 
 module SlackBot where
@@ -15,78 +16,127 @@ import Control.Monad.State
 import GHC.Generics
 import Control.Exception
 import Data.Maybe
+import Control.Applicative ((<|>))
+import Data.List (isPrefixOf)
+import EchoBot
+import Data.Char (isSpace)
 
-data SlackConfig = SlackConfig {token :: String,
-                                channel :: String} deriving (Show, Generic)
+data SlackConfig = 
+  SlackConfig { botToken  :: String
+              , botName   :: String
+              , userToken :: String     
+              , channel :: String
+              , repeats :: Int
+              , help :: String} deriving (Show, Generic)
 
-botName = "MY_BOT_NAME"
+data ValidSlackMessage = TextMessage SlackTextMessage | RepeatsCount Int
+
+getTs :: String -> ValidSlackMessage -> String
+getTs _ (TextMessage m) = tStamp m
+getTs def _             = ""
+
+data SlackTextMessage = SlackTextMessage {validText :: String, tStamp :: String} 
+
+data SlackBot = SlackBot { config :: SlackConfig 
+                         , lastMessageTs :: String
+                         , waitingForRepeatsAnswer :: Bool
+                         , repeastsMessageTs :: String}
+
+instance EchoBot SlackBot ValidSlackMessage SlackConfig where
+  getBotWithConfig c = SlackBot c "" False ""
+
+  getLastMessage = do
+    sBot@SlackBot{config = c, lastMessageTs = lTs, waitingForRepeatsAnswer = wr} <- get
+    lastMessage <- liftIO $ getLastValidMessage sBot
+    let newTs = maybe lTs (getTs lTs) lastMessage
+    put sBot{lastMessageTs = newTs}
+    return lastMessage
+
+  processMessage b@SlackBot{config = c} (RepeatsCount r) =
+    return b{config = c{repeats = r}, waitingForRepeatsAnswer = False}
+  processMessage b@SlackBot{config = c} (TextMessage m) =
+    let lastTs = tStamp m
+        in case validText m of
+             "/help" -> sendText c (help c) >> return b{waitingForRepeatsAnswer = False, lastMessageTs = lastTs}
+             "/repeat" -> do
+               sendPoll c
+               repeatsTs <- ts . head <$> getMessages c
+               return b{waitingForRepeatsAnswer = True, lastMessageTs = lastTs, repeastsMessageTs = repeatsTs}
+             txt -> replicateM_ (repeats c) (sendText c txt) >> return b{waitingForRepeatsAnswer = False, lastMessageTs = lastTs}
+
+getLastValidMessage :: SlackBot ->  IO (Maybe ValidSlackMessage)
+getLastValidMessage sb@SlackBot{waitingForRepeatsAnswer = wr, config = c} =
+  if wr
+     then do
+       let repeatsTst = repeastsMessageTs sb
+       pollAnswer <- getPollAnswer sb
+       getMessages c
+       let repeatsCount = getRepeatsCount pollAnswer
+       maybe (getLastTextMessage sb) (return . Just . RepeatsCount) repeatsCount
+     else getLastTextMessage sb
+
+getLastTextMessage :: SlackBot -> IO (Maybe ValidSlackMessage)
+getLastTextMessage sb@SlackBot{config = c} = do
+  messagesInfo <- getMessages c
+  return $ getLastUserMessage sb messagesInfo
+
+{-validateSlackMessage :: SlackMessage -> Maybe ValidSlackMessage
+validateSlackMessage sm = do
+  t <- text sm
+  let timeStamp = ts sm
+  return $ TextMessage $ SlackTextMessage t timeStamp-}
+
+getLastUserMessage :: SlackBot -> [SlackMessage] -> Maybe ValidSlackMessage
+getLastUserMessage _ [] = Nothing
+getLastUserMessage b@SlackBot{config = c, lastMessageTs = lastTs} (x:xs) = 
+  case parseTextMessage (botName c) lastTs x of
+    (Just t) -> getLastUserMessage b xs <|> (Just $ TextMessage $ SlackTextMessage t $ ts x)
+    _        -> getLastUserMessage b xs
+
+parseTextMessage :: String -> String -> SlackMessage -> Maybe String
+parseTextMessage bot lastTs SlackMessage{messageType = mt, user = u, text = t, ts = tStmp} =
+  if isJust mt && isJust u && isJust t && tStmp > lastTs && fromJust u /= bot
+     then parseMessageToBot ("<@" ++ bot ++">") $ fromJust t
+     else Nothing
+              
+
+parseMessageToBot :: String -> String -> Maybe String
+parseMessageToBot [] s = Just $ dropWhile isSpace s
+parseMessageToBot (x:xs) [] = Nothing
+parseMessageToBot (x:xs) (y:ys)
+  |x == y = parseMessageToBot xs ys
+  |otherwise = Nothing
+--parseMessageToBot bot str = ("<@>" ++ bot) `isPrefixOf` str
+
+--botName = "MY_BOT_NAME"
 
 instance FromJSON SlackConfig
 instance ToJSON SlackConfig
 
-echoLastMessage :: SlackConfig -> IO ()
-echoLastMessage sc = do
-  lastMessages <- getMessages sc
-  let lastText = maybe Nothing  getLastMessageText lastMessages
-  putStrLn "lastMessages :"
-  print lastMessages
-  putStrLn "lastText :"
-  print lastText
-  maybe (return ()) (sendText sc) lastText
-
-
---add timestamp processing
-getLastMessageText :: [SlackMessage] -> Maybe String
-getLastMessageText [] = Nothing
-getLastMessageText (x:xs) = 
-  maybe (getLastMessageText xs) Just $ getUserMessage x
-
---maybe I can just check text?
-getUserMessage :: SlackMessage -> Maybe String
-getUserMessage SlackMessage{messageType = mt, user = u, text = t} = 
-  if isJust mt && isJust u && isJust t then parseMessageToBot $ fromJust t
-                                       else Nothing
-
-parseMessageToBot :: String -> Maybe String
-parseMessageToBot str = reverse <$> res
-  where
-    (res, _, _) = foldl startBot (Just "", "", botName) str
-    startBot acc@(Nothing, _, _) _ = acc
-    startBot (n, "", botName) '<' = (n, "<", botName)
-    startBot (n, "<", botName) '@' = (n, "<@", botName)
-    startBot (n, "<@", []) '>' = (n, "<@>", [])
-    startBot (n, "<@", (x:xs)) c
-      |c == x = (n, "<@", xs)
-      |otherwise = (Nothing, "<@", (x:xs))
-    startBot (Just s, "<@>", []) x = (Just $ x:s, "<@>", [])
-    startBot (n, p, bn) _ = (Nothing, p, bn)
-
 sendText :: SlackConfig -> String -> IO ()
-sendText sc@SlackConfig{token = t, channel = c} txt =
+sendText sc@SlackConfig{botToken = t, channel = c} txt =
   postMessageSlack "https://slack.com/api/chat.postMessage" (RequestBodyBS $ pack $
-   "{\"channel\":\"" ++ c ++ "\",\"text\":\"" ++ txt ++ "\"}") "xoxb-403965130790-402459105700-tTSoVZoJH6TTfDb51QhkUiC5"
+   "{\"channel\":\"" ++ c ++ "\",\"text\":\"" ++ txt ++ "\"}") t
 
-getMessages :: SlackConfig -> IO (Maybe [SlackMessage])
-getMessages SlackConfig{token = t, channel = c} = do
+getMessages :: SlackConfig -> IO [SlackMessage]
+getMessages SlackConfig{userToken = t, channel = c} = do
   messagesStr <- catch (sendSlack "https://slack.com/api/channels.history" $
     "token=" ++ t ++ "&channel=" ++ c) $ return . handleHttpException
-  --print messagesStr
+  print messagesStr
   let messagesParsed = case messagesStr of
         "" -> Left "Didn't get an answer for request, but I'm still working!"
         msg -> eitherDecode msg :: Either String SlackResponse
-  return $ either (const Nothing) (Just . messages) messagesParsed
+  return $ either (const []) messages messagesParsed
 
 sendPoll :: SlackConfig -> IO ()
 sendPoll c = sendText c "Select repeats count:\n\n:one: :two: :three: :four: :five:"
 
-getPollAnswer :: SlackConfig -> IO (Either String ReactionsResponse)
-getPollAnswer SlackConfig{token = t, channel = c} = do
+getPollAnswer :: SlackBot -> IO (Either String ReactionsResponse) --I need timestamp of the question
+getPollAnswer SlackBot{config = SlackConfig{botToken = t, channel = c}, repeastsMessageTs = rTs} = do
   answerStr <- catch (sendSlack "https://slack.com/api/reactions.get" $
-    "token=" ++ "BOT_TOKEN" ++ "&channel=" ++ c ++
-     "&full=true&timestamp=1532275649.000040") $ return . handleHttpException
+    "token=" ++ t ++ "&channel=" ++ c ++
+     "&full=true&timestamp=" ++ rTs) $ return . handleHttpException
   return (eitherDecode answerStr :: Either String ReactionsResponse)
-  --print answerStr
-  --return (-1)
 
 getRepeatsCount :: Either String ReactionsResponse -> Maybe Int
 getRepeatsCount = either (const Nothing) $ getAnswer . reactions . message
@@ -101,4 +151,6 @@ getRepeatsCount = either (const Nothing) $ getAnswer . reactions . message
 handleHttpException :: SomeException -> B.ByteString --add normal exception handling
 handleHttpException e = "Something went wrong"
 
-myConfig = SlackConfig "USER_TOKEN" "CHAT_ID"
+mySlackConfig = SlackConfig "xoxb-403965130790-402459105700-tTSoVZoJH6TTfDb51QhkUiC5"
+ "UBUDH33LL" "xoxp-403965130790-403965130982-402459104772-8133e633d33ba7d42336790186debe4c"
+ "CBVM94KQT" 3 "Echo bot. Repeats every message n times (default : 3). To change n write /repeat"
