@@ -9,14 +9,17 @@ import SlackConfig
 import System.Environment
 import Data.Maybe (fromMaybe, maybe)
 
-main = putStrLn "Hello there!"
+main = do
+  telegramConfig <- getTelegramConfig
+  slackConfig <- getSlackConfig
+  return ()
 
 getTelegramConfig :: IO TelegramConfig
 getTelegramConfig = do
   telegramToken <- fromMaybe undefined <$> lookupEnv "TG_TOKEN"
   telegramRepeats <- maybe 3 read <$> lookupEnv "TG_REPEATS"
   telegramHelp <- fromMaybe ("Echo bot. Repeats every message n times (default n = "
-   ++ show telegramRepeats ++ ". To change n write /repeat") <$> lookupEnv "TG_HELP"
+   ++ show telegramRepeats ++ "). To change n write /repeat") <$> lookupEnv "TG_HELP"
   return $ TelegramConfig telegramToken telegramHelp telegramRepeats
 
 getSlackConfig :: IO SlackConfig
@@ -27,25 +30,8 @@ getSlackConfig = do
   slackChannel <- fromMaybe undefined <$> lookupEnv "SL_CHANNEL"
   slackRepeats <- maybe 3 read <$> lookupEnv "SL_REPEATS"
   slackHelp <- fromMaybe ("Echo bot. Repeats every message n times (default n = "
-   ++ show slackRepeats ++ ". To change n write /repeat") <$> lookupEnv "SL_HELP"
+   ++ show slackRepeats ++ "). To change n write /repeat") <$> lookupEnv "SL_HELP"
   return $ SlackConfig slackBotToken slackBotName slackAppToken slackChannel slackRepeats slackHelp
-
-
-{-
-data SlackConfig = 
-  SlackConfig { botToken  :: String
-              , botName   :: String
-              , userToken :: String     
-              , channel :: String
-              , repeats :: Int
-              , help :: String}
--}
-
-{-
-data TelegramConfig = TelegramConfig { token   :: String,
-                       help    :: String,
-                       repeats :: Int} deriving (Show, Generic)
--}
 
 echoMain :: EchoBot b m c => c -> IO ()
 echoMain = evalStateT runBot . getBotWithConfig
@@ -58,6 +44,6 @@ runBot = do
   put nBot
   runBot
 
-myTelegramConfig = TelegramConfig "685994346:AAF1gb675pklyGI_6QC-wcS4xXMkmUQQ8dE"
+{-myTelegramConfig = TelegramConfig "685994346:AAF1gb675pklyGI_6QC-wcS4xXMkmUQQ8dE"
  "Echo bot. Repeats every message n times (default : 3). To change n write /repeat"
- 3
+ 3-}
