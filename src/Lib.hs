@@ -57,7 +57,6 @@ postMessageSlack url body botToken = do
   request <- buildPostRequestSlack url body botToken
   response <- httpLbs request manager
   print response
-  --return ()
 
 sendSlack :: String -> String -> IO ByteString
 sendSlack url s = do
@@ -66,20 +65,4 @@ sendSlack url s = do
   manager <- newManager logManager
   request <- buildRequestSlack url s
   response <- httpLbs request manager
-  return $ responseBody response       
-  --let Just obj = decode (responseBody response)
-  --print (obj :: Object)
-
-{-
-  
-  botToken = "TOKEN"
-  
-  chatId = "CHAT_ID"
-  
-  sendMain = do
-    let botUrl = "https://api.telegram.org/bot" ++ botToken ++ "/sendMessage"
-        requestBody =
-          RequestBodyBS $
-          pack $ "{\"chat_id\": " ++ chatId ++ ",\"text\": \"test\"}"
-    send botUrl requestBody
--}
+  return $ responseBody response

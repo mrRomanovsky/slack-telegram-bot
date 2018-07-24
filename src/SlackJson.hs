@@ -28,13 +28,6 @@ instance FromJSON SlackMessage where
             <*> v .:? "text"
   parseJSON _ = mzero
 
-instance ToJSON SlackMessage where
-  toJSON (SlackMessage mType mTs mUser mText) =
-    object $ catMaybes [mField "type" mType,
-                        mField "ts" $ Just mTs,
-                        mField "user" mUser,
-                        mField "text" mText]
-
 data ReactionsResponse = 
   ReactionsResponse { reactionsOk :: Bool
                    , message :: MessageReactionsInfo} deriving (Show, Generic)
@@ -52,7 +45,6 @@ data Reaction = Reaction {name :: String} deriving (Show, Generic) --maybe turn 
 instance FromJSON MessageReactionsInfo
 instance FromJSON SlackResponse
 instance FromJSON Reaction
-instance ToJSON SlackResponse
 
 mField :: ToJSON a => T.Text -> Maybe a -> Maybe (T.Text, Value)
 mField field = fmap ((field .=) . toJSON)

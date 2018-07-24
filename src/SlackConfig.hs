@@ -21,4 +21,3 @@ getTs _ (TextMessage m) = tStamp m
 getTs def _             = ""
 
 instance FromJSON SlackConfig
-instance ToJSON SlackConfig

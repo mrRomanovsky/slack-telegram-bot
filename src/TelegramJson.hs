@@ -6,11 +6,6 @@ import Data.Aeson
 import GHC.Generics
 import Control.Monad
 
-{-repeatsKeyboard :: ReplyKeyboardMarkup
-repeatsKeyboard = ReplyKeyboardMarkup buttons
- where
-  buttons = [["1", "2", "3", "4", "5"]]-}
-
 data Updates = Updates { ok     :: Bool,
                          result :: [Update] } deriving (Show, Generic)
 
@@ -32,11 +27,6 @@ instance FromJSON User where
             <*> v .: "first_name"
   parseJSON _ = mzero
 
-instance ToJSON User where
-  toJSON (User userId firstName) =
-    object ["id"  .= userId
-           , "first_name"   .= firstName]
-
 data Chat = Chat { chat_id :: Integer,
                    chat_first_name :: String,
                    chat_type :: String } deriving (Show, Generic)
@@ -48,32 +38,6 @@ instance FromJSON Chat where
             <*> v .: "type"
   parseJSON _ = mzero
 
-instance ToJSON Chat where
-  toJSON (Chat chatId chatFirstName chatType) =
-    object [ "id"  .= chatId
-           , "first_name" .= chatFirstName
-           , "type"   .= chatType]
-
---data ReplyKeyboardMarkup = ReplyKeyboardMarkup
--- {keyboard :: [[String]]} deriving (Show, Generic)
-  --resize_keyboard :: Bool} deriving (Show, Generic)
-
---data KeyboardButton = KeyboardButton {buttonText :: String} deriving (Show, Generic)
-
-{-instance ToJSON KeyboardButton where
-  toJSON (KeyboardButton txt) = 
-    object ["text" .= txt]
-
-instance FromJSON KeyboardButton where
-  parseJSON (Object v) = 
-    KeyboardButton <$> v.: "text"
--}
-
 instance FromJSON Updates
 instance FromJSON Update
 instance FromJSON TelegramMessage
---instance FromJSON ReplyKeyboardMarkup
-instance ToJSON Updates
-instance ToJSON Update
-instance ToJSON TelegramMessage
---instance ToJSON ReplyKeyboardMarkup
