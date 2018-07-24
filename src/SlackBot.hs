@@ -119,7 +119,3 @@ getRepeatsCount = either (const Nothing) $ getAnswer . reactions . message
 
 handleHttpException :: SomeException -> B.ByteString
 handleHttpException e = "Something went wrong"
-
-mySlackConfig = SlackConfig "xoxb-403965130790-402459105700-tTSoVZoJH6TTfDb51QhkUiC5"
- "UBUDH33LL" "xoxp-403965130790-403965130982-402459104772-8133e633d33ba7d42336790186debe4c"
- "CBVM94KQT" 3 "Echo bot. Repeats every message n times (default : 3). To change n write /repeat"

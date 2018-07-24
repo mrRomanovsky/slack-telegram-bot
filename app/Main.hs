@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
+--{-# LANGUAGE FlexibleContexts #-}
 
 module Main where
 
@@ -7,12 +8,28 @@ import Control.Monad.State
 import TelegramConfig
 import SlackConfig
 import System.Environment
+import TelegramBot
+import SlackBot
 import Data.Maybe (fromMaybe, maybe)
+import Control.Concurrent.Async
+import Control.DeepSeq (force)
+
+{-
+import Control.Parallel (par, pseq)
+
+parSort :: (Ord a) => [a] -> [a]
+parSort (x:xs)    = force greater `par` (force lesser `pseq`
+                                         (lesser ++ x:greater))
+    where lesser  = parSort [y | y <- xs, y <  x]
+          greater = parSort [y | y <- xs, y >= x]
+parSort _         = []
+-}
 
 main = do
-  telegramConfig <- getTelegramConfig
-  slackConfig <- getSlackConfig
-  return ()
+  telegramConfig <- getTelegramConfig :: IO TelegramConfig
+  slackConfig <- getSlackConfig :: IO SlackConfig
+  async $ startEchoBot telegramConfig
+  startEchoBot slackConfig
 
 getTelegramConfig :: IO TelegramConfig
 getTelegramConfig = do
@@ -33,8 +50,8 @@ getSlackConfig = do
    ++ show slackRepeats ++ "). To change n write /repeat") <$> lookupEnv "SL_HELP"
   return $ SlackConfig slackBotToken slackBotName slackAppToken slackChannel slackRepeats slackHelp
 
-echoMain :: EchoBot b m c => c -> IO ()
-echoMain = evalStateT runBot . getBotWithConfig
+startEchoBot :: EchoBot b m c => c -> IO ()
+startEchoBot = evalStateT runBot . getBotWithConfig
 
 runBot :: EchoBot b m c => StateT b IO ()
 runBot = do
@@ -43,7 +60,3 @@ runBot = do
   nBot <- liftIO $ maybe (return bot) (processMessage bot) m
   put nBot
   runBot
-
-{-myTelegramConfig = TelegramConfig "685994346:AAF1gb675pklyGI_6QC-wcS4xXMkmUQQ8dE"
- "Echo bot. Repeats every message n times (default : 3). To change n write /repeat"
- 3-}

@@ -28,7 +28,7 @@ instance FromJSON SlackMessage where
             <*> v .:? "text"
   parseJSON _ = mzero
 
-instance ToJSON SlackMessage where --maybe I don't need it at all?
+instance ToJSON SlackMessage where
   toJSON (SlackMessage mType mTs mUser mText) =
     object $ catMaybes [mField "type" mType,
                         mField "ts" $ Just mTs,
