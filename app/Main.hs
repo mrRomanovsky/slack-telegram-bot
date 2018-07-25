@@ -2,16 +2,16 @@
 
 module Main where
 
-import EchoBot
+import Control.Concurrent.Async
+import Control.DeepSeq (force)
 import Control.Monad.State
-import TelegramConfig
+import Data.Maybe (fromMaybe, maybe)
+import EchoBot
+import SlackBot
 import SlackConfig
 import System.Environment
 import TelegramBot
-import SlackBot
-import Data.Maybe (fromMaybe, maybe)
-import Control.Concurrent.Async
-import Control.DeepSeq (force)
+import TelegramConfig
 
 main = do
   telegramConfig <- getTelegramConfig :: IO TelegramConfig
@@ -23,8 +23,11 @@ getTelegramConfig :: IO TelegramConfig
 getTelegramConfig = do
   telegramToken <- fromMaybe undefined <$> lookupEnv "TG_TOKEN"
   telegramRepeats <- maybe 3 read <$> lookupEnv "TG_REPEATS"
-  telegramHelp <- fromMaybe ("Echo bot. Repeats every message n times (default n = "
-   ++ show telegramRepeats ++ "). To change n write /repeat") <$> lookupEnv "TG_HELP"
+  telegramHelp <-
+    fromMaybe
+      ("Echo bot. Repeats every message n times (default n = " ++
+       show telegramRepeats ++ "). To change n write /repeat") <$>
+    lookupEnv "TG_HELP"
   return $ TelegramConfig telegramToken telegramHelp telegramRepeats
 
 getSlackConfig :: IO SlackConfig
@@ -34,9 +37,19 @@ getSlackConfig = do
   slackAppToken <- fromMaybe undefined <$> lookupEnv "SL_APP_TOKEN"
   slackChannel <- fromMaybe undefined <$> lookupEnv "SL_CHANNEL"
   slackRepeats <- maybe 3 read <$> lookupEnv "SL_REPEATS"
-  slackHelp <- fromMaybe ("Echo bot. Repeats every message n times (default n = "
-   ++ show slackRepeats ++ "). To change n write /repeat") <$> lookupEnv "SL_HELP"
-  return $ SlackConfig slackBotToken slackBotName slackAppToken slackChannel slackRepeats slackHelp
+  slackHelp <-
+    fromMaybe
+      ("Echo bot. Repeats every message n times (default n = " ++
+       show slackRepeats ++ "). To change n write /repeat") <$>
+    lookupEnv "SL_HELP"
+  return $
+    SlackConfig
+      slackBotToken
+      slackBotName
+      slackAppToken
+      slackChannel
+      slackRepeats
+      slackHelp
 
 startEchoBot :: EchoBot b m c => c -> IO ()
 startEchoBot = evalStateT runBot . getBotWithConfig
