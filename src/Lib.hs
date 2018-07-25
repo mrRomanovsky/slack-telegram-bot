@@ -22,7 +22,8 @@ buildRequest url body = do
 send :: String -> RequestBody -> IO ()
 send url s = do
   let logManager =
-        tlsManagerSettings {managerModifyRequest = \r -> print r >> return r}
+        tlsManagerSettings {managerModifyRequest = \r -> 
+          writeFile "telegram.log" (show r) >> return r}
   manager <- newManager logManager
   request <- buildRequest url s
   response <- httpLbs request manager
@@ -51,18 +52,20 @@ buildPostRequestSlack url body botToken = do
 
 postMessageSlack :: String -> RequestBody -> String -> IO ()
 postMessageSlack url body botToken = do
-  let logManager =
-        tlsManagerSettings {managerModifyRequest = \r -> print r >> return r}
-  manager <- newManager logManager
   request <- buildPostRequestSlack url body botToken
-  response <- httpLbs request manager
-  print response
+  sendRequestSlack request
+  return ()
 
-sendSlack :: String -> String -> IO ByteString
+sendSlack :: String -> String-> IO ByteString
 sendSlack url s = do
-  let logManager =
-        tlsManagerSettings {managerModifyRequest = \r -> print r >> return r}
-  manager <- newManager logManager
   request <- buildRequestSlack url s
+  sendRequestSlack request
+
+sendRequestSlack :: Request -> IO ByteString
+sendRequestSlack request = do
+  let logManager =
+        tlsManagerSettings {managerModifyRequest = \r ->
+          writeFile "slack.log" (show r) >> return r}
+  manager <- newManager logManager
   response <- httpLbs request manager
   return $ responseBody response

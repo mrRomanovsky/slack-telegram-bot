@@ -48,14 +48,9 @@ instance EchoBot TelegramBot TelegramMessage TelegramConfig where
       t         -> if not wr || t `notElem` keyboardAnswers
                       then replicateM_ (repeats c) (sendTxt $ t ++ "\"}") >> returnBot False
                       else changeRepeats (read txt) <$> returnBot False
-                      --else return $ changeRepeats b mId $ read txt
 
 changeRepeats :: Int -> TelegramBot -> TelegramBot
 changeRepeats r b@TelegramBot{config = c} = b{config = c{repeats = r}}                      
-{-changeRepeats :: TelegramBot -> Integer -> Int -> TelegramBot
-changeRepeats b@TelegramBot{config = c} newId r =
-  b{lastMessId = newId, config = c{repeats = r}, waitingForRepeats = False}
--}
 
 sendText :: String -> Integer -> String -> IO ()
 sendText txt chatId sendUrl = send sendUrl
@@ -70,8 +65,6 @@ keyboardAnswers = ["1", "2", "3", "4", "5"]
 
 processUpdates :: Integer -> Either String Updates -> Maybe TelegramMessage
 processUpdates lastId = either (const Nothing) (findLastMessage lastId . result)
-{-processUpdates :: TelegramConfig -> Integer -> Either String Updates -> Maybe TelegramMessage
-processUpdates c lastId = either (const Nothing) (findLastMessage lastId . result)-}
 
 findLastMessage :: Integer -> [Update] -> Maybe TelegramMessage
 findLastMessage oldId [] = Nothing
