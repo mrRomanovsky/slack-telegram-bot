@@ -116,6 +116,7 @@ getRepeatsCount = either (const Nothing) $ getAnswer . reactions . message
     parseAnswer "three" = Just 3
     parseAnswer "four" = Just 4
     parseAnswer "five" = Just 5
+    parseAnswer _      = Nothing
 
 handleHttpException :: SomeException -> B.ByteString
 handleHttpException e = "Something went wrong"

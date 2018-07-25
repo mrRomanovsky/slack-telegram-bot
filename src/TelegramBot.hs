@@ -35,7 +35,7 @@ instance EchoBot TelegramBot TelegramMessage TelegramConfig where
     let updates = case updatesStr of
           "" -> Left "Didn't get an answer for request, but I'm still working!"
           upd -> eitherDecode upd :: Either String Updates
-        m = processUpdates c oldId updates
+        m = processUpdates oldId updates
     put $ maybe tBot (\msg -> tBot{lastMessId = message_id msg}) m
     return m
 
@@ -50,11 +50,15 @@ instance EchoBot TelegramBot TelegramMessage TelegramConfig where
       "/repeat" -> sendTxt ("select repeats count:" ++ keyboard) >> returnBot True
       t         -> if not wr || t `notElem` keyboardAnswers
                       then replicateM_ (repeats c) (sendTxt $ t ++ "\"}") >> returnBot False
-                      else return $ changeRepeats b mId $ read txt
+                      else changeRepeats (read txt) <$> returnBot False
+                      --else return $ changeRepeats b mId $ read txt
 
-changeRepeats :: TelegramBot -> Integer -> Int -> TelegramBot
+changeRepeats :: Int -> TelegramBot -> TelegramBot
+changeRepeats r b@TelegramBot{config = c} = b{config = c{repeats = r}}                      
+{-changeRepeats :: TelegramBot -> Integer -> Int -> TelegramBot
 changeRepeats b@TelegramBot{config = c} newId r =
   b{lastMessId = newId, config = c{repeats = r}, waitingForRepeats = False}
+-}
 
 sendText :: String -> Integer -> String -> IO ()
 sendText txt chatId sendUrl = send sendUrl
@@ -67,8 +71,10 @@ keyboard = "\",\"reply_markup\": {\"keyboard\":[[\"1\",\"2\",\"3\",\"4\",\"5\"]]
 keyboardAnswers :: [String]
 keyboardAnswers = ["1", "2", "3", "4", "5"]
 
-processUpdates :: TelegramConfig -> Integer -> Either String Updates -> Maybe TelegramMessage
-processUpdates c lastId = either (const Nothing) (findLastMessage lastId . result)
+processUpdates :: Integer -> Either String Updates -> Maybe TelegramMessage
+processUpdates lastId = either (const Nothing) (findLastMessage lastId . result)
+{-processUpdates :: TelegramConfig -> Integer -> Either String Updates -> Maybe TelegramMessage
+processUpdates c lastId = either (const Nothing) (findLastMessage lastId . result)-}
 
 findLastMessage :: Integer -> [Update] -> Maybe TelegramMessage
 findLastMessage oldId [] = Nothing
