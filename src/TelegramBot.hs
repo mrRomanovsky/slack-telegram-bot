@@ -35,7 +35,7 @@ instance EchoBot TelegramBot TelegramMessage TelegramConfig where
     let updates = case updatesStr of
           "" -> Left "Didn't get an answer for request, but I'm still working!"
           upd -> eitherDecode upd :: Either String Updates
-        m = processUpdates c oldId updates
+        m = processUpdates oldId updates
     put $ maybe tBot (\msg -> tBot{lastMessId = message_id msg}) m
     return m
 
@@ -71,8 +71,10 @@ keyboard = "\",\"reply_markup\": {\"keyboard\":[[\"1\",\"2\",\"3\",\"4\",\"5\"]]
 keyboardAnswers :: [String]
 keyboardAnswers = ["1", "2", "3", "4", "5"]
 
-processUpdates :: TelegramConfig -> Integer -> Either String Updates -> Maybe TelegramMessage
-processUpdates c lastId = either (const Nothing) (findLastMessage lastId . result)
+processUpdates :: Integer -> Either String Updates -> Maybe TelegramMessage
+processUpdates lastId = either (const Nothing) (findLastMessage lastId . result)
+{-processUpdates :: TelegramConfig -> Integer -> Either String Updates -> Maybe TelegramMessage
+processUpdates c lastId = either (const Nothing) (findLastMessage lastId . result)-}
 
 findLastMessage :: Integer -> [Update] -> Maybe TelegramMessage
 findLastMessage oldId [] = Nothing
