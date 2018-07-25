@@ -76,13 +76,13 @@ parseMessageToBot (x:xs) (y:ys)
 
 sendText :: SlackConfig -> String -> IO ()
 sendText sc@SlackConfig{botToken = t, channel = c} txt =
-  postMessageSlack "https://slack.com/api/chat.postMessage" (RequestBodyBS $ pack $
-   "{\"channel\":\"" ++ c ++ "\",\"text\":\"" ++ txt ++ "\"}") t
+  catch (postMessageSlack "https://slack.com/api/chat.postMessage" (RequestBodyBS $ pack $
+   "{\"channel\":\"" ++ c ++ "\",\"text\":\"" ++ txt ++ "\"}") t) handleSendException
 
 getMessages :: SlackConfig -> IO [SlackMessage]
 getMessages SlackConfig{appToken = t, channel = c} = do
   messagesStr <- catch (sendSlack "https://slack.com/api/channels.history" $
-    "token=" ++ t ++ "&channel=" ++ c) $ return . handleHttpException
+    "token=" ++ t ++ "&channel=" ++ c) handleGetException
   print messagesStr
   let messagesParsed = case messagesStr of
         "" -> Left "Didn't get an answer for request, but I'm still working!"
@@ -96,7 +96,7 @@ getPollAnswer :: SlackBot -> IO (Either String ReactionsResponse)
 getPollAnswer SlackBot{config = SlackConfig{botToken = t, channel = c}, repeastsMessageTs = rTs} = do
   answerStr <- catch (sendSlack "https://slack.com/api/reactions.get" $
     "token=" ++ t ++ "&channel=" ++ c ++
-     "&full=true&timestamp=" ++ rTs) $ return . handleHttpException
+     "&full=true&timestamp=" ++ rTs) handlePollException
   return (eitherDecode answerStr :: Either String ReactionsResponse)
 
 getRepeatsCount :: Either String ReactionsResponse -> Maybe Int
@@ -110,5 +110,18 @@ getRepeatsCount = either (const Nothing) $ getAnswer . reactions . message
     parseAnswer "five" = Just 5
     parseAnswer _      = Nothing
 
-handleHttpException :: SomeException -> B.ByteString
-handleHttpException e = "Something went wrong"
+handleGetException :: SomeException -> IO B.ByteString
+handleGetException e = do
+  writeFile "slack.log" $
+    "Caught exception while getting messages: " ++ show e
+  return ""
+
+handlePollException :: SomeException -> IO B.ByteString
+handlePollException e = do
+  writeFile "slack.log" $
+    "Caught exception while getting poll answer: " ++ show e
+  return ""
+
+handleSendException :: SomeException -> IO ()
+handleSendException e = writeFile "slack.log" $
+  "Caught exception while sending text: " ++ show e

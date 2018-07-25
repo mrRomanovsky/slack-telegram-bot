@@ -30,11 +30,15 @@ instance EchoBot TelegramBot TelegramMessage TelegramConfig where
           (bUrl ++ "sendMessage") 0 False
 
   getLastMessage tBot@TelegramBot{config = c, getUpdates = updStr, lastMessId = oldId} = do
-    updatesStr <- catch (simpleHttp updStr) $ return . handleHttpException
-    let updates = case updatesStr of
-          "" -> Left "Didn't get an answer for request, but I'm still working!"
-          upd -> eitherDecode upd :: Either String Updates
-    return $ processUpdates oldId updates
+    updatesStr <- try $ simpleHttp updStr :: IO (Either SomeException B.ByteString)
+    case updatesStr of
+      (Left e) -> do
+        writeFile "telegram.log" $
+          "Caught exception while getting last message: " ++ show e
+        return Nothing
+      (Right upd) -> do
+        let updates = eitherDecode upd :: Either String Updates
+        return $ processUpdates oldId updates
 
   processMessage b@TelegramBot{config = c, sendMessage = sendUrl, waitingForRepeats = wr} m = do
     let txt = text m
@@ -53,9 +57,9 @@ changeRepeats :: Int -> TelegramBot -> TelegramBot
 changeRepeats r b@TelegramBot{config = c} = b{config = c{repeats = r}}                      
 
 sendText :: String -> Integer -> String -> IO ()
-sendText txt chatId sendUrl = sendTelegram sendUrl
+sendText txt chatId sendUrl = catch (sendTelegram sendUrl
  (RequestBodyBS $ pack $ "{\"chat_id\": "++ show chatId ++
-  ",\"text\": \"" ++ txt)
+  ",\"text\": \"" ++ txt)) handleException
 
 keyboard :: String
 keyboard = "\",\"reply_markup\": {\"keyboard\":[[\"1\",\"2\",\"3\",\"4\",\"5\"]],\"resize_keyboard\": true, \"one_time_keyboard\": true}}"
@@ -74,5 +78,6 @@ findLastMessage oldId (x:xs) = let mess = message x
                                          then Just mess
                                          else findLastMessage oldId xs
 
-handleHttpException :: SomeException -> B.ByteString
-handleHttpException e = ""
+handleException :: SomeException -> IO ()
+handleException e = writeFile "telegram.log" $
+  "Caught exception while sending message: " ++ show e
