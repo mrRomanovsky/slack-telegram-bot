@@ -27,12 +27,15 @@ data SlackBot = SlackBot { config :: SlackConfig
 instance EchoBot SlackBot ValidSlackMessage SlackConfig where
   getBotWithConfig c = SlackBot c "" False ""
 
-  getLastMessage = do
-    sBot@SlackBot{config = c, lastMessageTs = lTs, waitingForRepeatsAnswer = wr} <- get
-    lastMessage <- liftIO $ getLastValidMessage sBot
-    let newTs = maybe lTs (getTs lTs) lastMessage
-    put sBot{lastMessageTs = newTs}
-    return lastMessage
+  getLastMessage sb@SlackBot{waitingForRepeatsAnswer = wr, config = c} =
+    if wr
+       then do
+         let repeatsTst = repeastsMessageTs sb
+         pollAnswer <- getPollAnswer sb
+         getMessages c
+         let repeatsCount = getRepeatsCount pollAnswer
+         maybe (getLastTextMessage sb) (return . Just . RepeatsCount) repeatsCount
+       else getLastTextMessage sb
 
   processMessage b@SlackBot{config = c} (RepeatsCount r) =
     return b{config = c{repeats = r}, waitingForRepeatsAnswer = False}
@@ -46,7 +49,7 @@ instance EchoBot SlackBot ValidSlackMessage SlackConfig where
                return b{waitingForRepeatsAnswer = True, lastMessageTs = lastTs, repeastsMessageTs = repeatsTs}
              txt -> replicateM_ (repeats c) (sendText c txt) >> return b{waitingForRepeatsAnswer = False, lastMessageTs = lastTs}
 
-getLastValidMessage :: SlackBot ->  IO (Maybe ValidSlackMessage)
+{-getLastValidMessage :: SlackBot ->  IO (Maybe ValidSlackMessage)
 getLastValidMessage sb@SlackBot{waitingForRepeatsAnswer = wr, config = c} =
   if wr
      then do
@@ -55,7 +58,7 @@ getLastValidMessage sb@SlackBot{waitingForRepeatsAnswer = wr, config = c} =
        getMessages c
        let repeatsCount = getRepeatsCount pollAnswer
        maybe (getLastTextMessage sb) (return . Just . RepeatsCount) repeatsCount
-     else getLastTextMessage sb
+     else getLastTextMessage sb-}
 
 getLastTextMessage :: SlackBot -> IO (Maybe ValidSlackMessage)
 getLastTextMessage sb@SlackBot{config = c} = do

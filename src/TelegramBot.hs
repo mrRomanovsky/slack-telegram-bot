@@ -29,15 +29,12 @@ instance EchoBot TelegramBot TelegramMessage TelegramConfig where
         in TelegramBot c bUrl (bUrl ++ "getUpdates") 
           (bUrl ++ "sendMessage") 0 False
 
-  getLastMessage = do
-    tBot@TelegramBot{config = c, getUpdates = updStr, lastMessId = oldId} <- get
-    updatesStr <- liftIO $ catch (simpleHttp updStr) $ return . handleHttpException
+  getLastMessage tBot@TelegramBot{config = c, getUpdates = updStr, lastMessId = oldId} = do
+    updatesStr <- catch (simpleHttp updStr) $ return . handleHttpException
     let updates = case updatesStr of
           "" -> Left "Didn't get an answer for request, but I'm still working!"
           upd -> eitherDecode upd :: Either String Updates
-        m = processUpdates oldId updates
-    put $ maybe tBot (\msg -> tBot{lastMessId = message_id msg}) m
-    return m
+    return $ processUpdates oldId updates
 
   processMessage b@TelegramBot{config = c, sendMessage = sendUrl, waitingForRepeats = wr} m = do
     let txt = text m

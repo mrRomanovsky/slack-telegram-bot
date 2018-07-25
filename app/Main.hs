@@ -1,5 +1,4 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
---{-# LANGUAGE FlexibleContexts #-}
 
 module Main where
 
@@ -13,17 +12,6 @@ import SlackBot
 import Data.Maybe (fromMaybe, maybe)
 import Control.Concurrent.Async
 import Control.DeepSeq (force)
-
-{-
-import Control.Parallel (par, pseq)
-
-parSort :: (Ord a) => [a] -> [a]
-parSort (x:xs)    = force greater `par` (force lesser `pseq`
-                                         (lesser ++ x:greater))
-    where lesser  = parSort [y | y <- xs, y <  x]
-          greater = parSort [y | y <- xs, y >= x]
-parSort _         = []
--}
 
 main = do
   telegramConfig <- getTelegramConfig :: IO TelegramConfig
@@ -56,7 +44,7 @@ startEchoBot = evalStateT runBot . getBotWithConfig
 runBot :: EchoBot b m c => StateT b IO ()
 runBot = do
   bot <- get
-  m <- getLastMessage
+  m <- liftIO $ getLastMessage bot
   nBot <- liftIO $ maybe (return bot) (processMessage bot) m
   put nBot
   runBot
