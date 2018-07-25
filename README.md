@@ -15,19 +15,27 @@ Set environment variables:
 
 TG_TOKEN="your telegram bot token"
 
-Optional variables:
+#### Optional variables:
 
-optional: TG_REPEATS="default counts of repeating messages (if not specified, will be equal to 3)"
-optional: TG_HELP="bot help message (if not specified, will be "Echo bot. Repeats every message n times (default n = TG_REPEATS). To change n write /repeat")"
+TG_REPEATS="default counts of repeating messages (if not specified, will be equal to 3)"
+
+TG_HELP="bot help message (if not specified, will be "Echo bot. Repeats every message n times (default n = TG_REPEATS). To change n write /repeat")"
 
 
 ### Slack bot:
 
 SL_BOT_TOKEN="Bot User OAuth Access Token"
+
 SL_BOT_NAME="Encoded bot name(example: UBUDH33LL)
+
 SL_APP_TOKEN="OAuth Access Token"
+
 SL_CHANNEL="id of channel (example: CBVM94KQT)"
+
+#### Optional variables:
+
 optional: SL_REPEATS="default counts of repeating messages (if not specified, will be equal to 3)"
+
 optional: SL_HELP="bot help message (if not specified, will be "Echo bot. Repeats every message n times (default n = SL_REPEATS). To change n write /repeat")"
 
 Your app needs next scopes permissions:
