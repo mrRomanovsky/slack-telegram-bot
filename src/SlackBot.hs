@@ -109,7 +109,6 @@ getMessages SlackConfig {appToken = t, channel = c} = do
       (sendSlack "https://slack.com/api/channels.history" $
        "token=" ++ t ++ "&channel=" ++ c)
       handleGetException
-  print messagesStr
   let messagesParsed =
         case messagesStr of
           "" -> Left "Didn't get an answer for request, but I'm still working!"
