@@ -75,15 +75,15 @@ src/
 
 Files:
 
-  test/
+test/
 
-    Spec.hs -- main testing file, launches all tests
+  Spec.hs -- main testing file, launches all tests
 
-    SlackTests.hs -- slack bot unit tests
+  SlackTests.hs -- slack bot unit tests
 
-    TelegramTests.hs -- telegram bot unit tests
+  TelegramTests.hs -- telegram bot unit tests
 
-    TestUtils.hs -- helper-functions for unit testing and checking results
+  TestUtils.hs -- helper-functions for unit testing and checking results
 
 
 ## Logging
