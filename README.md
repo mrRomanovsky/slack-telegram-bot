@@ -75,7 +75,7 @@ src/
 
 Files:
 
-  /test
+  test/
 
     Spec.hs -- main testing file, launches all tests
 
