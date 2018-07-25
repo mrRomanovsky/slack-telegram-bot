@@ -3,6 +3,7 @@ module TelegramTests where
 import TelegramBot
 import TelegramConfig
 import TelegramJson
+import TestUtils
 import Data.Maybe (isNothing)
 import Control.Monad.Except
 
@@ -37,10 +38,6 @@ testFindLastMessage = do
     maybe False ((==2). message_id) $ findLastMessage 1 updates
   checkResult (testName ++ "test4") $
     isNothing $ findLastMessage 23 updates
-
-checkResult :: String -> Bool -> Either String Bool
-checkResult testName False = throwError $ "error : " ++ testName
-checkResult _        True  = Right True
 
 buildUpdate :: Integer -> Update
 buildUpdate n = Update n $ TelegramMessage n testUser testChat 23 "test"

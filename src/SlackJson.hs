@@ -37,10 +37,10 @@ instance FromJSON ReactionsResponse where
     ReactionsResponse <$> v .: "ok"
           <*> v .: "message"
 
-data MessageReactionsInfo = 
-  MessageReactionsInfo {reactions :: Maybe [Reaction]} deriving (Show, Generic) -- maybe turn it into newtype?
+newtype MessageReactionsInfo = 
+  MessageReactionsInfo {reactions :: Maybe [Reaction]} deriving (Show, Generic)
 
-data Reaction = Reaction {name :: String} deriving (Show, Generic) --maybe turn it into newtype?
+newtype Reaction = Reaction {name :: String} deriving (Show, Generic)
 
 instance FromJSON MessageReactionsInfo
 instance FromJSON SlackResponse
@@ -48,6 +48,3 @@ instance FromJSON Reaction
 
 mField :: ToJSON a => T.Text -> Maybe a -> Maybe (T.Text, Value)
 mField field = fmap ((field .=) . toJSON)
-
-{-catMaybes :: [Maybe a] -> [a]
-catMaybes = map fromJust . filter iJust-}
