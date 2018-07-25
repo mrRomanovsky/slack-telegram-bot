@@ -1,4 +1,4 @@
-module TelegramTests where
+module TelegramTests (telegramTests) where
 
 import TelegramBot
 import TelegramConfig
@@ -6,6 +6,10 @@ import TelegramJson
 import TestUtils
 import Data.Maybe (isNothing)
 import Control.Monad.Except
+
+telegramTests = [("testFindLastMessage", testFindLastMessage),
+                 ("testProcessUpdates", testProcessUpdates),
+                 ("testChangeRepeats", testChangeRepeats)]
 
 testChangeRepeats :: Either String Bool
 testChangeRepeats = do

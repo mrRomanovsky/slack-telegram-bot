@@ -1,4 +1,4 @@
-module SlackTests where
+module SlackTests (slackTests) where
 
 import SlackBot
 import SlackJson
@@ -6,6 +6,11 @@ import SlackConfig
 import TestUtils
 import Control.Monad.Except
 import Data.Maybe (isNothing, isJust)
+
+slackTests = [("testGetRepeatsCount", testGetRepeatsCount),
+              ("testParseMessageToBot", testParseMessageToBot),
+              ("testParseTextMessage", testParseTextMessage),
+              ("testGetLastUserMessage", testGetLastUserMessage)]
 
 testGetLastUserMessage :: Either String Bool
 testGetLastUserMessage = do
@@ -40,9 +45,9 @@ testParseTextMessage = do
   checkResult (testName ++ "test4") $
     isNothing $ parseTextMessage "bot" "0" slackMess4
   checkResult (testName ++ "test5") $
-    isJust $ parseTextMessage "bot" "40" slackMess1
+    isJust $ parseTextMessage "bot" "40" slackMess5
   checkResult (testName ++ "test6") $
-    isNothing $ parseTextMessage "bot" "43" slackMess1
+    isNothing $ parseTextMessage "bot" "43" slackMess5
 
 slackMess1 = SlackMessage Nothing "42" Nothing Nothing
 slackMess2 = slackMess1{messageType = Just "message"}
@@ -59,8 +64,8 @@ testParseMessageToBot = do
     parseMessageToBot "<@bot23>" "<@bot23>hello" ==
       Just "hello"
   checkResult (testName ++ "test3") $
-    parseMessageToBot "<@bot42>" "<@bot42> " ==
-      Just " "
+    parseMessageToBot "<@bot42>" "<@bot42>" ==
+      Just ""
   checkResult (testName ++ "test4") $
     isNothing $ parseMessageToBot "<@bot>" "<@bot12>hello"  
 
