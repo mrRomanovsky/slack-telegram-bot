@@ -7,7 +7,7 @@ import SlackJson
 import Control.Monad
 import Data.Aeson
 import Network.HTTP.Conduit hiding (httpLbs)
-import Lib
+import Requests (sendSlack, postMessageSlack)
 import SlackConfig
 import Data.ByteString.Char8 (pack)
 import qualified Data.ByteString.Lazy as B
@@ -48,17 +48,6 @@ instance EchoBot SlackBot ValidSlackMessage SlackConfig where
                repeatsTs <- ts . head <$> getMessages c
                return b{waitingForRepeatsAnswer = True, lastMessageTs = lastTs, repeastsMessageTs = repeatsTs}
              txt -> replicateM_ (repeats c) (sendText c txt) >> return b{waitingForRepeatsAnswer = False, lastMessageTs = lastTs}
-
-{-getLastValidMessage :: SlackBot ->  IO (Maybe ValidSlackMessage)
-getLastValidMessage sb@SlackBot{waitingForRepeatsAnswer = wr, config = c} =
-  if wr
-     then do
-       let repeatsTst = repeastsMessageTs sb
-       pollAnswer <- getPollAnswer sb
-       getMessages c
-       let repeatsCount = getRepeatsCount pollAnswer
-       maybe (getLastTextMessage sb) (return . Just . RepeatsCount) repeatsCount
-     else getLastTextMessage sb-}
 
 getLastTextMessage :: SlackBot -> IO (Maybe ValidSlackMessage)
 getLastTextMessage sb@SlackBot{config = c} = do

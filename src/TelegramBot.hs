@@ -10,7 +10,7 @@ import Control.Monad.State
 import Control.Monad (void)
 import Data.Aeson
 import Network.HTTP.Conduit hiding (httpLbs)
-import Lib
+import Requests (sendTelegram)
 import Data.ByteString.Char8 (pack)
 import qualified Data.ByteString.Lazy as B
 import Control.Exception
@@ -53,7 +53,7 @@ changeRepeats :: Int -> TelegramBot -> TelegramBot
 changeRepeats r b@TelegramBot{config = c} = b{config = c{repeats = r}}                      
 
 sendText :: String -> Integer -> String -> IO ()
-sendText txt chatId sendUrl = send sendUrl
+sendText txt chatId sendUrl = sendTelegram sendUrl
  (RequestBodyBS $ pack $ "{\"chat_id\": "++ show chatId ++
   ",\"text\": \"" ++ txt)
 

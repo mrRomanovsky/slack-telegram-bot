@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Lib where
+module Requests (sendTelegram, sendSlack, postMessageSlack) where
 
 import Data.Aeson
 import Network.HTTP.Client
@@ -19,8 +19,8 @@ buildRequest url body = do
        , requestHeaders = [(HTTP.hContentType, "application/json")]
        })
 
-send :: String -> RequestBody -> IO ()
-send url s = do
+sendTelegram :: String -> RequestBody -> IO ()
+sendTelegram url s = do
   let logManager =
         tlsManagerSettings {managerModifyRequest = \r -> 
           writeFile "telegram.log" (show r) >> return r}
