@@ -1,16 +1,20 @@
-module SlackTests (slackTests) where
+module SlackTests
+  ( slackTests
+  ) where
 
-import SlackBot
-import SlackJson
-import SlackConfig
-import TestUtils
 import Control.Monad.Except
-import Data.Maybe (isNothing, isJust)
+import Data.Maybe (isJust, isNothing)
+import SlackBot
+import SlackConfig
+import SlackJson
+import TestUtils
 
-slackTests = [("testGetRepeatsCount", testGetRepeatsCount),
-              ("testParseMessageToBot", testParseMessageToBot),
-              ("testParseTextMessage", testParseTextMessage),
-              ("testGetLastUserMessage", testGetLastUserMessage)]
+slackTests =
+  [ ("testGetRepeatsCount", testGetRepeatsCount)
+  , ("testParseMessageToBot", testParseMessageToBot)
+  , ("testParseTextMessage", testParseTextMessage)
+  , ("testGetLastUserMessage", testGetLastUserMessage)
+  ]
 
 testGetLastUserMessage :: Either String Bool
 testGetLastUserMessage = do
@@ -19,13 +23,14 @@ testGetLastUserMessage = do
     isJust $ getLastUserMessage testBot [slackMess5]
   checkResult (testName ++ "test2") $
     isNothing $ getLastUserMessage testBot [slackMess1, slackMess2, slackMess3]
-  checkResult (testName ++ "test3") $
-    isNothing $ getLastUserMessage testBot []
+  checkResult (testName ++ "test3") $ isNothing $ getLastUserMessage testBot []
   checkResult (testName ++ "test4") $
-    isNothing $ getLastUserMessage testBot [slackMess5{ts = "0"}]
+    isNothing $ getLastUserMessage testBot [slackMess5 {ts = "0"}]
   checkResult (testName ++ "test5") $
-    isJust $ getLastUserMessage testBot
-             [slackMess5{ts = "0"}, slackMess5{ts = "2"}, slackMess5]
+    isJust $
+    getLastUserMessage
+      testBot
+      [slackMess5 {ts = "0"}, slackMess5 {ts = "2"}, slackMess5]
 
 testBot = SlackBot testConfig "22" False "22"
 
@@ -41,7 +46,7 @@ testParseTextMessage = do
   checkResult (testName ++ "test2") $
     isNothing $ parseTextMessage "bot" "0" slackMess2
   checkResult (testName ++ "test3") $
-    isNothing $ parseTextMessage "bot" "0" slackMess3    
+    isNothing $ parseTextMessage "bot" "0" slackMess3
   checkResult (testName ++ "test4") $
     isNothing $ parseTextMessage "bot" "0" slackMess4
   checkResult (testName ++ "test5") $
@@ -50,10 +55,14 @@ testParseTextMessage = do
     isNothing $ parseTextMessage "bot" "43" slackMess5
 
 slackMess1 = SlackMessage Nothing "42" Nothing Nothing
-slackMess2 = slackMess1{messageType = Just "message"}
-slackMess3 = slackMess2{user = Just "bot"}
-slackMess4 = slackMess2{user = Just "user", text = Just "hello"}
-slackMess5 = slackMess4{text = Just "<@bot>hello"}
+
+slackMess2 = slackMess1 {messageType = Just "message"}
+
+slackMess3 = slackMess2 {user = Just "bot"}
+
+slackMess4 = slackMess2 {user = Just "user", text = Just "hello"}
+
+slackMess5 = slackMess4 {text = Just "<@bot>hello"}
 
 testParseMessageToBot :: Either String Bool
 testParseMessageToBot = do
@@ -61,13 +70,11 @@ testParseMessageToBot = do
   checkResult (testName ++ "test1") $
     isNothing $ parseMessageToBot "<@bot>" "hello"
   checkResult (testName ++ "test2") $
-    parseMessageToBot "<@bot23>" "<@bot23>hello" ==
-      Just "hello"
+    parseMessageToBot "<@bot23>" "<@bot23>hello" == Just "hello"
   checkResult (testName ++ "test3") $
-    parseMessageToBot "<@bot42>" "<@bot42>" ==
-      Just ""
+    parseMessageToBot "<@bot42>" "<@bot42>" == Just ""
   checkResult (testName ++ "test4") $
-    isNothing $ parseMessageToBot "<@bot>" "<@bot12>hello"  
+    isNothing $ parseMessageToBot "<@bot>" "<@bot12>hello"
 
 testGetRepeatsCount :: Either String Bool
 testGetRepeatsCount = do
@@ -89,10 +96,13 @@ buildReactResponse :: Maybe [Reaction] -> ReactionsResponse
 buildReactResponse = ReactionsResponse True . MessageReactionsInfo
 
 [reactOne, reactTwo, reactThree, reactFour, reactFive, invalidReact] =
-   Reaction <$> ["one", "two", "three", "four", "five", "invalid"]
+  Reaction <$> ["one", "two", "three", "four", "five", "invalid"]
 
 [reactResp1, reactResp2, reactResp3, reactResp4, reactResp5] =
-  buildReactResponse <$> [Nothing, Just [reactOne],
-                          Just [reactTwo, reactOne],
-                          Just [reactFive, reactTwo, reactThree],
-                          Just [invalidReact]]
+  buildReactResponse <$>
+  [ Nothing
+  , Just [reactOne]
+  , Just [reactTwo, reactOne]
+  , Just [reactFive, reactTwo, reactThree]
+  , Just [invalidReact]
+  ]
