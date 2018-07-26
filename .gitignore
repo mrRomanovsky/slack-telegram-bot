@@ -1,4 +1,6 @@
 .stack-work/
 slack-telegram-bot.cabal
+.vscode
+.history
 *.log
 *~
