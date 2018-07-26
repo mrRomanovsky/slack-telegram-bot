@@ -1,6 +1,24 @@
 # Slack-telegram-bot
 This is the server-side implementation of echo-bot for slack and telegram. Feel free to contribute. Check paragraphs below for instructions about app's structure and how to build it.
 
+## How it works
+
+### Telegram bot:
+
+Echoes user messages (each message is echoed n times. See more in "preparing the app").
+
+/repeats -- change n
+
+/help -- get help message
+
+### Slack bot
+
+Echoes user messages (each message is echoed n times. See more in "preparing the app"). To get the answer you have to start the message with @BotName .
+
+/repeats -- change n with emoji-reaction
+
+/help -- get help message
+
 ## Building app
 
 Go to app folder after downloading or cloning from git. Run command "stack build"
