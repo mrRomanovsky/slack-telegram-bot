@@ -32,7 +32,6 @@ dependencies:
 - http-client-tls
 - http-types
 - async
-- deepseq
 
 library:
   source-dirs: src

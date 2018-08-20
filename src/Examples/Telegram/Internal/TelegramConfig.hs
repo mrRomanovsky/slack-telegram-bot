@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 
-module TelegramConfig where
+module Examples.Telegram.Internal.TelegramConfig where
 
 import Data.Aeson
 import GHC.Generics

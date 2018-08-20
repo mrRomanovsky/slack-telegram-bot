@@ -1,8 +1,10 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies #-}
 
-module SlackJson where
+module Examples.Slack.Internal.SlackJson where
 
+import Bot.Message
 import Control.Monad
 import Data.Aeson
 import Data.Maybe

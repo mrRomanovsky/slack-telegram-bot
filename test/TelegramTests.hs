@@ -4,26 +4,14 @@ module TelegramTests
 
 import Control.Monad.Except
 import Data.Maybe (isNothing)
-import TelegramBot
-import TelegramConfig
-import TelegramJson
+import Examples.Telegram.Internal.TelegramBot
+import Examples.Telegram.Internal.TelegramConfig
+import Examples.Telegram.Internal.TelegramJson
 import TestUtils
 
 telegramTests =
   [ ("testFindLastMessage", testFindLastMessage)
-  , ("testProcessUpdates", testProcessUpdates)
-  , ("testChangeRepeats", testChangeRepeats)
-  ]
-
-testChangeRepeats :: Either String Bool
-testChangeRepeats = do
-  let testName = "testChangeRepeats : "
-  checkResult (testName ++ "test1") $
-    repeats (config $ changeRepeats 4 testingBot1) == 4
-  checkResult (testName ++ "test2") $
-    repeats (config $ changeRepeats 2 testingBot1) == 2
-  checkResult (testName ++ "test3") $
-    repeats (config $ changeRepeats 0 testingBot1) == 0
+  , ("testProcessUpdates", testProcessUpdates)]
 
 testProcessUpdates :: Either String Bool
 testProcessUpdates = do

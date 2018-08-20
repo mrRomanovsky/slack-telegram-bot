@@ -4,14 +4,13 @@ module SlackTests
 
 import Control.Monad.Except
 import Data.Maybe (isJust, isNothing)
-import SlackBot
-import SlackConfig
-import SlackJson
+import Examples.Slack.Internal.SlackBot
+import Examples.Slack.Internal.SlackConfig
+import Examples.Slack.Internal.SlackJson
 import TestUtils
 
 slackTests =
-  [ ("testGetRepeatsCount", testGetRepeatsCount)
-  , ("testParseMessageToBot", testParseMessageToBot)
+  [ ("testParseMessageToBot", testParseMessageToBot)
   , ("testParseTextMessage", testParseTextMessage)
   , ("testGetLastUserMessage", testGetLastUserMessage)
   ]
@@ -75,22 +74,6 @@ testParseMessageToBot = do
     parseMessageToBot "<@bot42>" "<@bot42>" == Just ""
   checkResult (testName ++ "test4") $
     isNothing $ parseMessageToBot "<@bot>" "<@bot12>hello"
-
-testGetRepeatsCount :: Either String Bool
-testGetRepeatsCount = do
-  let testName = "testGetRepeatsCount : "
-  checkResult (testName ++ "test1") $
-    isNothing $ getRepeatsCount $ Left "something went wrong"
-  checkResult (testName ++ "test2") $
-    isNothing $ getRepeatsCount $ Right reactResp1
-  checkResult (testName ++ "test3") $
-    getRepeatsCount (Right reactResp2) == Just 1
-  checkResult (testName ++ "test4") $
-    getRepeatsCount (Right reactResp3) == Just 2
-  checkResult (testName ++ "test5") $
-    getRepeatsCount (Right reactResp4) == Just 5
-  checkResult (testName ++ "test6") $
-    isNothing $ getRepeatsCount $ Right reactResp5
 
 buildReactResponse :: Maybe [Reaction] -> ReactionsResponse
 buildReactResponse = ReactionsResponse True . MessageReactionsInfo

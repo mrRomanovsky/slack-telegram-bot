@@ -1,8 +1,10 @@
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module TelegramJson where
+module Examples.Telegram.Internal.TelegramJson where
 
+import Bot.Message
 import Control.Monad
 import Data.Aeson
 import GHC.Generics
@@ -24,6 +26,11 @@ data TelegramMessage = TelegramMessage
   , date :: Integer
   , text :: String
   } deriving (Show, Generic)
+
+instance Message TelegramMessage where
+  type Id TelegramMessage = Chat
+  messId = chat
+  messText = text
 
 data User = User
   { user_id :: Integer

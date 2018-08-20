@@ -72,21 +72,11 @@ app/Main.hs -- main function, getting bots configs and launching bots in paralle
 
 src/
 
-  EchoBot.hs -- typeclass for echo bots
+  Bot -- typeclasses for messenger bot and bot's message
 
-  Requests.hs -- helper functions for sending HTTP-requests to bots
+  Echo -- typeclasses for echo messenger bots
 
-  SlackBot.hs -- implementation of slack echo bot
-
-  SlackConfig.hs -- datatypes for slack config and slack messages
-
-  SlackJson.hs -- datatypes for json-formatted messages from slack server
-
-  TelegramBot.hs -- implementation of telegram echo bot
-
-  TelegramConfig.hs -- datatype for telegram config 
-
-  TelegramJson.hs -- datatypes for json-formatted messages from telegram server
+  Examples - implementations of Slack and Telegram messenger bots
 
 ## Testing
 "slack test" -- run unit tests

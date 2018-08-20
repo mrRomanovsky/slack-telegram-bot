@@ -1,19 +1,22 @@
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module TelegramBot where
+module Examples.Telegram.Internal.TelegramBot where
 
+import Bot.Bot
 import Control.Exception
 import Control.Monad (void)
 import Control.Monad.State
 import Data.Aeson
 import Data.ByteString.Char8 (pack)
 import qualified Data.ByteString.Lazy as B
-import EchoBot
+import Echo.EchoBot
+import Examples.Telegram.Internal.Exceptions
+import Examples.Telegram.Internal.Requests
+import Examples.Telegram.Internal.TelegramConfig
+import Examples.Telegram.Internal.TelegramJson
 import Network.HTTP.Conduit hiding (httpLbs)
-import Requests (sendTelegram)
-import TelegramConfig
-import TelegramJson
 
 data TelegramBot = TelegramBot
   { config :: TelegramConfig
@@ -24,7 +27,9 @@ data TelegramBot = TelegramBot
   , waitingForRepeats :: Bool
   }
 
-instance EchoBot TelegramBot TelegramMessage TelegramConfig where
+instance Bot TelegramBot where
+  type BotConfig TelegramBot = TelegramConfig
+  type BotMessage TelegramBot = TelegramMessage
   getBotWithConfig c =
     let bUrl = "https://api.telegram.org/bot" ++ token c ++ "/"
      in TelegramBot
@@ -34,40 +39,26 @@ instance EchoBot TelegramBot TelegramMessage TelegramConfig where
           (bUrl ++ "sendMessage")
           0
           False
-  getLastMessage tBot@TelegramBot { config = c
-                                  , getUpdates = updStr
-                                  , lastMessId = oldId
-                                  } = do
+  getLastMessage = do
+    tBot@TelegramBot {config = c, getUpdates = updStr, lastMessId = oldId} <-
+      get
     updatesStr <-
-      try $ simpleHttp updStr :: IO (Either SomeException B.ByteString)
+      liftIO $ try $ simpleHttp updStr :: StateT TelegramBot IO (Either SomeException B.ByteString)
     case updatesStr of
       (Left e) -> do
-        writeFile "telegram.log" $
+        liftIO $
+          writeFile "telegram.log" $
           "Caught exception while getting last message: " ++ show e
         return Nothing
       (Right upd) -> do
         let updates = eitherDecode upd :: Either String Updates
-        return $ processUpdates oldId updates
-  processMessage b@TelegramBot { config = c
-                               , sendMessage = sendUrl
-                               , waitingForRepeats = wr
-                               } m = do
-    let txt = text m
-        chatId = chat_id $ chat m
-        mId = message_id m
-        sendTxt mText = sendText mText chatId sendUrl
-        returnBot wFr = return $ b {lastMessId = mId, waitingForRepeats = wFr}
-    case txt of
-      "/help" -> sendTxt (help c ++ "\"}") >> returnBot False
-      "/repeat" ->
-        sendTxt ("select repeats count:" ++ keyboard) >> returnBot True
-      t ->
-        if not wr || t `notElem` keyboardAnswers
-          then replicateM_ (repeats c) (sendTxt $ t ++ "\"}") >> returnBot False
-          else changeRepeats (read txt) <$> returnBot False
-
-changeRepeats :: Int -> TelegramBot -> TelegramBot
-changeRepeats r b@TelegramBot {config = c} = b {config = c {repeats = r}}
+        let msg = processUpdates oldId updates
+        put $ maybe tBot (\m -> tBot {lastMessId = message_id m}) msg
+        return msg
+  sendMessageTo mChat txt = do
+    b@TelegramBot {config = c, sendMessage = sendUrl, waitingForRepeats = wr} <-
+      get
+    liftIO $ sendText txt (chat_id mChat) sendUrl
 
 sendText :: String -> Integer -> String -> IO ()
 sendText txt chatId sendUrl =
@@ -78,12 +69,20 @@ sendText txt chatId sendUrl =
         pack $ "{\"chat_id\": " ++ show chatId ++ ",\"text\": \"" ++ txt))
     handleException
 
+instance EchoBot TelegramBot where
+  helpMessage = help . config
+  repeatsCount = repeats . config
+  repeatsTxt _ = keyboard
+  isWaitingForRepeats = waitingForRepeats
+  setWaitingForRepeats wFr b = b {waitingForRepeats = wFr}
+  setRepeatsCount r b@TelegramBot {config = c} = b {config = c {repeats = r}}
+  tryGetRepeatsCount m = lookup (messText m) keyboardAnswers
+    where
+      keyboardAnswers = [("1", 1), ("2", 2), ("3", 3), ("4", 4), ("5", 5)]
+
 keyboard :: String
 keyboard =
   "\",\"reply_markup\": {\"keyboard\":[[\"1\",\"2\",\"3\",\"4\",\"5\"]],\"resize_keyboard\": true, \"one_time_keyboard\": true}}"
-
-keyboardAnswers :: [String]
-keyboardAnswers = ["1", "2", "3", "4", "5"]
 
 processUpdates :: Integer -> Either String Updates -> Maybe TelegramMessage
 processUpdates lastId = either (const Nothing) (findLastMessage lastId . result)
@@ -96,8 +95,3 @@ findLastMessage oldId (x:xs) =
    in if messId > oldId
         then Just mess
         else findLastMessage oldId xs
-
-handleException :: SomeException -> IO ()
-handleException e =
-  writeFile "telegram.log" $
-  "Caught exception while sending message: " ++ show e

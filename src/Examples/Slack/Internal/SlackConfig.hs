@@ -1,7 +1,9 @@
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DeriveGeneric #-}
 
-module SlackConfig where
+module Examples.Slack.Internal.SlackConfig where
 
+import Bot.Message
 import Data.Aeson
 import GHC.Generics
 
@@ -16,15 +18,22 @@ data SlackConfig = SlackConfig
 
 data ValidSlackMessage
   = TextMessage SlackTextMessage
-  | RepeatsCount Int
+  | RepeatsCount String
 
 data SlackTextMessage = SlackTextMessage
   { validText :: String
   , tStamp :: String
   }
 
-getTs :: String -> ValidSlackMessage -> String
-getTs _ (TextMessage m) = tStamp m
-getTs def _ = ""
+instance Message ValidSlackMessage where
+  type Id ValidSlackMessage = String
+  messId (TextMessage m) = tStamp m
+  messId _ = ""
+  messText (TextMessage m) = validText m
+  messText (RepeatsCount rc) = rc
+
+getTs :: ValidSlackMessage -> String
+getTs (TextMessage m) = tStamp m
+getTs _ = ""
 
 instance FromJSON SlackConfig
