@@ -133,11 +133,6 @@ instance EchoBot SlackBot where
   setWaitingForRepeats b sb = sb {waitingForRepeatsAnswer = b}
   setRepeatsCount r sb@SlackBot {config = c} = sb {config = c {repeats = r}}
   tryGetRepeatsCount (TextMessage _) = Nothing
-  tryGetRepeatsCount (RepeatsCount rs) = parseRepeats rs
-
-parseRepeats "one" = Just 1
-parseRepeats "two" = Just 2
-parseRepeats "three" = Just 3
-parseRepeats "four" = Just 4
-parseRepeats "five" = Just 5
-parseRepeats _ = Nothing
+  tryGetRepeatsCount (RepeatsCount rs) = lookup rs keyboardAnswers
+    where
+      keyboardAnswers = [("one", 1), ("two", 2), ("three", 3), ("four", 4), ("five", 5)]
