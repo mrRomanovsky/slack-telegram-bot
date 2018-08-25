@@ -25,7 +25,7 @@ sendTelegram url s = do
   let logManager =
         tlsManagerSettings
           { managerModifyRequest =
-              \r -> writeFile "telegram.log" (show r) >> return r
+              \r -> appendFile "telegram.log" (show r) >> return r
           }
   manager <- newManager logManager
   request <- buildRequest url s

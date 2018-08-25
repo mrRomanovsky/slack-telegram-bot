@@ -22,7 +22,7 @@ data SlackMessage = SlackMessage
   , ts :: String
   , user :: Maybe String
   , text :: Maybe String
-  } deriving (Show, Generic)
+  } deriving (Show, Generic, Read)
 
 instance FromJSON SlackMessage where
   parseJSON (Object v) =

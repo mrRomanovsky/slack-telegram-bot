@@ -18,12 +18,12 @@ data SlackConfig = SlackConfig
 
 data ValidSlackMessage
   = TextMessage SlackTextMessage
-  | RepeatsCount String
+  | RepeatsCount String deriving (Show)
 
 data SlackTextMessage = SlackTextMessage
   { validText :: String
   , tStamp :: String
-  }
+  } deriving (Show)
 
 instance Message ValidSlackMessage where
   type Id ValidSlackMessage = String

@@ -66,7 +66,7 @@ sendText txt chatId sendUrl =
     (sendTelegram
        sendUrl
        (RequestBodyBS $
-        pack $ "{\"chat_id\": " ++ show chatId ++ ",\"text\": \"" ++ txt))
+        pack $ "{\"chat_id\": " ++ show chatId ++ ",\"text\": \"" ++ txt ++ "\"}"))
     handleException
 
 instance EchoBot TelegramBot where

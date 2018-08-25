@@ -4,5 +4,5 @@ import Control.Exception
 
 handleException :: SomeException -> IO ()
 handleException e =
-  writeFile "telegram.log" $
+  appendFile "telegram.log" $
   "Caught exception while sending message: " ++ show e
