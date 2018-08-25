@@ -16,8 +16,8 @@ import Data.Maybe (isJust)
 class Message (BotMessage b) =>
       Bot b
   where
-  type BotConfig b :: c| c -> b
-  type BotMessage b :: m| m -> b
+  type BotConfig b = c | c -> b
+  type BotMessage b = m | m -> b
   getBotWithConfig :: BotConfig b -> b
   getLastMessage :: StateT b IO (Maybe (BotMessage b))
   sendMessageTo :: Id (BotMessage b) -> String -> StateT b IO ()

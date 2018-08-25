@@ -12,10 +12,6 @@ import System.Environment
 runTelegramEcho :: TelegramConfig -> IO ()
 runTelegramEcho = startEchoBot
 
-{-
-startEchoBot :: EchoBot b => BotConfig b -> IO ()
-startEchoBot = evalStateT runEchoBot . getBotWithConfig
--}
 getTelegramConfig :: IO TelegramConfig
 getTelegramConfig = do
   telegramToken <- fromMaybe undefined <$> lookupEnv "TG_TOKEN"
