@@ -7,6 +7,7 @@ import Examples.Telegram.Bot
 
 main = do
   telegramConfig <- getTelegramConfig
-  slackConfig <- getSlackConfig
-  async $ runTelegramEcho telegramConfig
-  runSlackEcho slackConfig
+  runTelegramEcho telegramConfig
+  --slackConfig <- getSlackConfig
+-- async $ runTelegramEcho telegramConfig
+--  runSlackEcho slackConfig

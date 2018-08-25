@@ -25,7 +25,6 @@ dependencies:
 - text
 - bytestring
 - http-conduit
-- hlint
 - mtl
 - template-haskell
 - http-client
