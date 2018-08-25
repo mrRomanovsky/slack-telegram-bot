@@ -12,30 +12,40 @@ handleGetException LogConfig { logFile = logF
                              , logLevel = logL
                              , logConsole = logCons
                              } e = do
+  let errMess = show e
+      logMess =
+        "Warning: server did not send information about new messages: they may be lost: " ++
+        show e
   when
     (logL <= Warning)
-    (do let errMess =
-              "Warning: server did not send information about new messages: they may be lost: " ++
-              show e
-        when logCons (print errMess)
-        appendFile logF errMess)
+    (do when logCons (print logMess)
+        appendFile logF logMess)
+  throwIfInterrupt e errMess
   return ""
 
 handlePollException :: LogConfig -> SomeException -> IO B.ByteString
-handlePollException LogConfig { logFile = logF
-                              , logLevel = logL
-                              , logConsole = logCons
-                              } e = do
-  let errMess = "Caught exception while getting poll answer: " ++ show e
-  when logCons (print errMess)
-  appendFile logF errMess
+handlePollException lc e = do
+  let errMess = show e
+      logMess =
+        "Warning: server did not send information about new messages: they may be lost: " ++
+        show e
+  logFileConsole lc e logMess errMess
   return ""
 
 handleSendException :: LogConfig -> SomeException -> IO ()
-handleSendException LogConfig { logFile = logF
-                              , logLevel = logL
-                              , logConsole = logCons
-                              } e = do
-  let errMess = "Caught exception while sending message: " ++ show e
-  when logCons (print errMess)
-  appendFile logF errMess
+handleSendException lc e = do
+  let errMess = show e
+      logMess =
+        "Warning: server did not send information about new messages: they may be lost: " ++
+        errMess
+  logFileConsole lc e logMess errMess
+
+logFileConsole :: LogConfig -> SomeException -> String -> String -> IO ()
+logFileConsole lc e logMess errMess = do
+  when (logConsole lc) (print logMess)
+  appendFile (logFile lc) logMess
+  throwIfInterrupt e errMess
+
+throwIfInterrupt :: SomeException -> String -> IO ()
+throwIfInterrupt e "user interrupt" = print (show e) >> throw e
+throwIfInterrupt e _ = print (show e) >> return ()

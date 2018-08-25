@@ -47,20 +47,11 @@ instance Bot TelegramBot where
     let lc = logConfig c
         logL = logLevel lc
         logF = logFile lc
-    updatesStr <-
-      liftIO $ try $ simpleHttp updStr :: StateT TelegramBot IO (Either SomeException B.ByteString)
-    case updatesStr of
-      (Left e) -> do
-        when
-          (logL >= Warning)
-          (liftIO $
-           writeFile logF $ "Could not get the last message: " ++ show e)
-        return Nothing
-      (Right upd) -> do
-        let updates = eitherDecode upd :: Either String Updates
-        let msg = processUpdates oldId updates
-        put $ maybe tBot (\m -> tBot {lastMessId = message_id m}) msg
-        return msg
+    upd <- liftIO $ catch (simpleHttp updStr) (handleGetException lc)
+    let updates = eitherDecode upd :: Either String Updates
+    let msg = processUpdates oldId updates
+    put $ maybe tBot (\m -> tBot {lastMessId = message_id m}) msg
+    return msg
   sendMessageTo mChat txt = do
     b@TelegramBot {config = c, sendMessage = sendUrl, waitingForRepeats = wr} <-
       get
