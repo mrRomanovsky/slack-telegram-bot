@@ -11,6 +11,7 @@ import Control.Monad.State
 import Data.Aeson
 import Data.ByteString.Char8 (pack)
 import qualified Data.ByteString.Lazy as B
+import Data.Foldable (asum)
 import Echo.EchoBot
 import Examples.Telegram.Internal.Exceptions
 import Examples.Telegram.Internal.Requests
@@ -66,7 +67,8 @@ sendText txt chatId sendUrl =
     (sendTelegram
        sendUrl
        (RequestBodyBS $
-        pack $ "{\"chat_id\": " ++ show chatId ++ ",\"text\": \"" ++ txt ++ "\"}"))
+        pack $
+        "{\"chat_id\": " ++ show chatId ++ ",\"text\": \"" ++ txt ++ "\"}"))
     handleException
 
 instance EchoBot TelegramBot where
@@ -88,10 +90,11 @@ processUpdates :: Integer -> Either String Updates -> Maybe TelegramMessage
 processUpdates lastId = either (const Nothing) (findLastMessage lastId . result)
 
 findLastMessage :: Integer -> [Update] -> Maybe TelegramMessage
-findLastMessage oldId [] = Nothing
-findLastMessage oldId (x:xs) =
-  let mess = message x
-      messId = message_id mess
-   in if messId > oldId
-        then Just mess
-        else findLastMessage oldId xs
+findLastMessage oldId =
+  asum .
+  fmap
+    (\u ->
+       let mess = message u
+        in if message_id mess > oldId
+             then Just mess
+             else Nothing)

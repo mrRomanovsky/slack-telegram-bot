@@ -5,7 +5,6 @@
 module Examples.Slack.Internal.SlackBot where
 
 import Bot.Bot
-import Control.Applicative ((<|>))
 import Control.Exception
 import Control.Monad
 import Control.Monad.State
@@ -13,6 +12,7 @@ import Data.Aeson
 import Data.ByteString.Char8 (pack)
 import qualified Data.ByteString.Lazy as B
 import Data.Char (isSpace)
+import Data.Foldable (asum)
 import Data.List (isPrefixOf)
 import Data.Maybe
 import Echo.EchoBot
@@ -89,22 +89,20 @@ getMessages SlackConfig {appToken = t, channel = c} = do
   return $ either (const []) messages messagesParsed
 
 getLastUserMessage :: SlackBot -> [SlackMessage] -> Maybe ValidSlackMessage
-getLastUserMessage _ [] = Nothing
-getLastUserMessage b@SlackBot {config = c, lastMessageTs = lastTs} (x:xs) =
-  case parseTextMessage (botName c) lastTs x of
-    (Just t) ->
-      getLastUserMessage b xs <|>
-      (Just $ TextMessage $ SlackTextMessage t $ ts x)
-    _ -> getLastUserMessage b xs
+getLastUserMessage b@SlackBot {config = c, lastMessageTs = lastTs} =
+  asum . fmap (fmap TextMessage . parseTextMessage (botName c) lastTs)
+  where
 
-parseTextMessage :: String -> String -> SlackMessage -> Maybe String
+
+parseTextMessage :: String -> String -> SlackMessage -> Maybe SlackTextMessage
 parseTextMessage bot lastTs SlackMessage { messageType = mt
                                          , user = u
                                          , text = t
                                          , ts = tStmp
                                          } =
   if isJust mt && isJust u && isJust t && tStmp > lastTs && fromJust u /= bot
-    then parseMessageToBot ("<@" ++ bot ++ ">") $ fromJust t
+    then (`SlackTextMessage` tStmp) <$>
+         parseMessageToBot ("<@" ++ bot ++ ">") (fromJust t)
     else Nothing
 
 parseMessageToBot :: String -> String -> Maybe String
