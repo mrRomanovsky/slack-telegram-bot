@@ -95,15 +95,18 @@ getLastUserMessage b@SlackBot {config = c, lastMessageTs = lastTs} =
 
 
 parseTextMessage :: String -> String -> SlackMessage -> Maybe SlackTextMessage
-parseTextMessage bot lastTs SlackMessage { messageType = mt
-                                         , user = u
-                                         , text = t
-                                         , ts = tStmp
-                                         } =
-  if isJust mt && isJust u && isJust t && tStmp > lastTs && fromJust u /= bot
-    then (`SlackTextMessage` tStmp) <$>
-         parseMessageToBot ("<@" ++ bot ++ ">") (fromJust t)
+parseTextMessage bot lastTs m =
+  if isNewTextFromUser bot lastTs m
+    then (`SlackTextMessage` ts m) <$>
+         parseMessageToBot ("<@" ++ bot ++ ">") (fromJust $ text m)
     else Nothing
+
+isNewTextFromUser :: String -> String -> SlackMessage -> Bool
+isNewTextFromUser bot lastTs SlackMessage { messageType = mt
+  , user = u
+  , text = t
+  , ts = tStmp
+  } = isJust mt && isJust u && isJust t && tStmp > lastTs && fromJust u /= bot
 
 parseMessageToBot :: String -> String -> Maybe String
 parseMessageToBot [] s = Just $ dropWhile isSpace s
