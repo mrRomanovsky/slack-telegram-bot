@@ -16,7 +16,7 @@ import Data.Foldable (asum)
 import Data.List (isPrefixOf)
 import Data.Maybe
 import Echo.EchoBot
-import Examples.Slack.Internal.Exceptions
+import Examples.Exceptions.Exceptions
 import Examples.Slack.Internal.Requests
 import Examples.Slack.Internal.SlackConfig
 import Examples.Slack.Internal.SlackJson
@@ -56,14 +56,17 @@ newTs msg sb =
     tSt -> sb {lastMessageTs = tSt}
 
 getPollAnswer :: SlackBot -> IO (Either String ReactionsResponse)
-getPollAnswer SlackBot { config = SlackConfig {botToken = t, channel = c}
+getPollAnswer SlackBot { config = SlackConfig { botToken = t
+                                              , channel = c
+                                              , logConfig = lc
+                                              }
                        , repeastsMessageTs = rTs
                        } = do
   answerStr <-
     catch
-      (sendSlack "https://slack.com/api/reactions.get" $
-       "token=" ++ t ++ "&channel=" ++ c ++ "&full=true&timestamp=" ++ rTs)
-      handlePollException
+      (sendSlack lc "https://slack.com/api/reactions.get" $
+       "token=" ++ t ++ "&channel=" ++ c ++ "&full=true&timestamp=" ++ rTs) $
+    handlePollException lc
   return (eitherDecode answerStr :: Either String ReactionsResponse)
 
 getRepeatsCount :: Either String ReactionsResponse -> Maybe String
@@ -76,12 +79,12 @@ getLastTextMessage sb@SlackBot {config = c, waitingForRepeatsAnswer = wFr} = do
   return $ getLastUserMessage sb messagesInfo
 
 getMessages :: SlackConfig -> IO [SlackMessage]
-getMessages SlackConfig {appToken = t, channel = c} = do
+getMessages SlackConfig {appToken = t, channel = c, logConfig = lc} = do
   messagesStr <-
     catch
-      (sendSlack "https://slack.com/api/channels.history" $
-       "token=" ++ t ++ "&channel=" ++ c)
-      handleGetException
+      (sendSlack lc "https://slack.com/api/channels.history" $
+       "token=" ++ t ++ "&channel=" ++ c) $
+    handleGetException lc
   let messagesParsed =
         case messagesStr of
           "" -> Left "Didn't get an answer for request, but I'm still working!"
@@ -103,10 +106,11 @@ parseTextMessage bot lastTs m =
 
 isNewTextFromUser :: String -> String -> SlackMessage -> Bool
 isNewTextFromUser bot lastTs SlackMessage { messageType = mt
-  , user = u
-  , text = t
-  , ts = tStmp
-  } = isJust mt && isJust u && isJust t && tStmp > lastTs && fromJust u /= bot
+                                          , user = u
+                                          , text = t
+                                          , ts = tStmp
+                                          } =
+  isJust mt && isJust u && isJust t && tStmp > lastTs && fromJust u /= bot
 
 parseMessageToBot :: String -> String -> Maybe String
 parseMessageToBot [] s = Just $ dropWhile isSpace s
@@ -116,14 +120,15 @@ parseMessageToBot (x:xs) (y:ys)
   | otherwise = Nothing
 
 sendText :: SlackConfig -> String -> IO ()
-sendText sc@SlackConfig {botToken = t, channel = c} txt =
+sendText sc@SlackConfig {botToken = t, channel = c, logConfig = lc} txt =
   catch
     (postMessageSlack
+       lc
        "https://slack.com/api/chat.postMessage"
        (RequestBodyBS $
         pack $ "{\"channel\":\"" ++ c ++ "\",\"text\":\"" ++ txt ++ "\"}")
-       t)
-    handleSendException
+       t) $
+  handleSendException lc
 
 instance EchoBot SlackBot where
   helpMessage SlackBot {config = c} = help c
@@ -135,4 +140,5 @@ instance EchoBot SlackBot where
   tryGetRepeatsCount (TextMessage _) = Nothing
   tryGetRepeatsCount (RepeatsCount rs) = lookup rs keyboardAnswers
     where
-      keyboardAnswers = [("one", 1), ("two", 2), ("three", 3), ("four", 4), ("five", 5)]
+      keyboardAnswers =
+        [("one", 1), ("two", 2), ("three", 3), ("four", 4), ("five", 5)]

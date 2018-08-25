@@ -8,7 +8,9 @@ import Data.Maybe
 import Echo.EchoBot
 import Examples.Slack.Internal.SlackBot
 import Examples.Slack.Internal.SlackConfig
+import Logging.Config
 import System.Environment
+import Text.Read (readMaybe)
 
 runSlackEcho :: SlackConfig -> IO ()
 runSlackEcho = startEchoBot
@@ -25,6 +27,15 @@ getSlackConfig = do
       ("Echo bot. Repeats every message n times (default n = " ++
        show slackRepeats ++ "). To change n write /repeat") <$>
     lookupEnv "SL_HELP"
+  logFile <- fromMaybe "telegram.log" <$> lookupEnv "SL_LOG_FILE"
+  logConsoleStr <- fromMaybe "False" <$> lookupEnv "SL_LOG_CONSOLE"
+  logLevelStr <- fromMaybe "Warning" <$> lookupEnv "SL_LOG_LEVEL"
+  let logLevel =
+        fromMaybe (error "incorrect log level!") $ readMaybe logLevelStr
+      logConsole =
+        fromMaybe (error "incorrect log_console parameter!") $
+        readMaybe logConsoleStr
+      logConfig = LogConfig logFile logLevel logConsole
   return $
     SlackConfig
       slackBotToken
@@ -33,3 +44,4 @@ getSlackConfig = do
       slackChannel
       slackRepeats
       slackHelp
+      logConfig

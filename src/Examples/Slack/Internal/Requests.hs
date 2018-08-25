@@ -7,6 +7,7 @@ module Examples.Slack.Internal.Requests
 
 import Data.ByteString.Char8 (pack)
 import Data.ByteString.Lazy (ByteString)
+import Logging.Config
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import qualified Network.HTTP.Types as HTTP
@@ -35,24 +36,34 @@ buildPostRequestSlack url body botToken = do
            ]
        })
 
-postMessageSlack :: String -> RequestBody -> String -> IO ()
-postMessageSlack url body botToken = do
+postMessageSlack :: LogConfig -> String -> RequestBody -> String -> IO ()
+postMessageSlack lc url body botToken = do
   request <- buildPostRequestSlack url body botToken
-  sendRequestSlack request
+  sendRequestSlack lc request
   return ()
 
-sendSlack :: String -> String -> IO ByteString
-sendSlack url s = do
+sendSlack :: LogConfig -> String -> String -> IO ByteString
+sendSlack lc url s = do
   request <- buildRequestSlack url s
-  sendRequestSlack request
+  sendRequestSlack lc request
 
-sendRequestSlack :: Request -> IO ByteString
-sendRequestSlack request = do
+sendRequestSlack :: LogConfig -> Request -> IO ByteString
+sendRequestSlack LogConfig {logLevel = logL, logFile = logF} request = do
   let logManager =
-        tlsManagerSettings
-          { managerModifyRequest =
-              \r -> writeFile "slack.log" (show r) >> return r
-          }
+        if logL == Debug
+          then tlsManagerSettings
+                 { managerModifyRequest =
+                     \r ->
+                       appendFile logF "request to server: " >>
+                       appendFile logF (show r) >>
+                       return r
+                 , managerModifyResponse =
+                     \r ->
+                       appendFile logF "response status: " >>
+                       appendFile logF (show $ responseStatus r) >>
+                       return r
+                 }
+          else tlsManagerSettings
   manager <- newManager logManager
   response <- httpLbs request manager
   return $ responseBody response

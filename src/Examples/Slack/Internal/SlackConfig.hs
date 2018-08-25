@@ -6,6 +6,7 @@ module Examples.Slack.Internal.SlackConfig where
 import Bot.Message
 import Data.Aeson
 import GHC.Generics
+import Logging.Config
 
 data SlackConfig = SlackConfig
   { botToken :: String
@@ -14,11 +15,13 @@ data SlackConfig = SlackConfig
   , channel :: String
   , repeats :: Int
   , help :: String
+  , logConfig :: LogConfig
   } deriving (Show, Generic)
 
 data ValidSlackMessage
   = TextMessage SlackTextMessage
-  | RepeatsCount String deriving (Show)
+  | RepeatsCount String
+  deriving (Show)
 
 data SlackTextMessage = SlackTextMessage
   { validText :: String

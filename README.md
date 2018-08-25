@@ -39,6 +39,12 @@ TG_REPEATS="default counts of repeating messages (if not specified, will be equa
 
 TG_HELP="bot help message (if not specified, will be "Echo bot. Repeats every message n times (default n = TG_REPEATS). To change n write /repeat")"
 
+TG_LOG_FILE="name of the file to write logs"
+
+TG_LOG_CONSOLE="True|False - print log messages to console"
+
+TG_LOG_LEVEL="Debug|Warning|Error"
+
 
 ### Slack bot:
 
@@ -55,6 +61,12 @@ SL_CHANNEL="id of channel (example: CBVM94KQT)"
 SL_REPEATS="default counts of repeating messages (if not specified, will be equal to 3)"
 
 SL_HELP="bot help message (if not specified, will be "Echo bot. Repeats every message n times (default n = SL_REPEATS). To change n write /repeat")"
+
+SL_LOG_FILE="name of the file to write logs"
+
+SL_LOG_CONSOLE="True|False - print log messages to console"
+
+SL_LOG_LEVEL="Debug|Warning|Error"
 
 Your app needs next scopes permissions:
 channels:history

@@ -13,10 +13,11 @@ import Data.ByteString.Char8 (pack)
 import qualified Data.ByteString.Lazy as B
 import Data.Foldable (asum)
 import Echo.EchoBot
-import Examples.Telegram.Internal.Exceptions
+import Examples.Exceptions.Exceptions
 import Examples.Telegram.Internal.Requests
 import Examples.Telegram.Internal.TelegramConfig
 import Examples.Telegram.Internal.TelegramJson
+import Logging.Config
 import Network.HTTP.Conduit hiding (httpLbs)
 
 data TelegramBot = TelegramBot
@@ -43,13 +44,17 @@ instance Bot TelegramBot where
   getLastMessage = do
     tBot@TelegramBot {config = c, getUpdates = updStr, lastMessId = oldId} <-
       get
+    let lc = logConfig c
+        logL = logLevel lc
+        logF = logFile lc
     updatesStr <-
       liftIO $ try $ simpleHttp updStr :: StateT TelegramBot IO (Either SomeException B.ByteString)
     case updatesStr of
       (Left e) -> do
-        liftIO $
-          writeFile "telegram.log" $
-          "Caught exception while getting last message: " ++ show e
+        when
+          (logL >= Warning)
+          (liftIO $
+           writeFile logF $ "Could not get the last message: " ++ show e)
         return Nothing
       (Right upd) -> do
         let updates = eitherDecode upd :: Either String Updates
@@ -59,17 +64,19 @@ instance Bot TelegramBot where
   sendMessageTo mChat txt = do
     b@TelegramBot {config = c, sendMessage = sendUrl, waitingForRepeats = wr} <-
       get
-    liftIO $ sendText txt (chat_id mChat) sendUrl
+    let lc = logConfig c
+    liftIO $ sendText lc txt (chat_id mChat) sendUrl
 
-sendText :: String -> Integer -> String -> IO ()
-sendText txt chatId sendUrl =
+sendText :: LogConfig -> String -> Integer -> String -> IO ()
+sendText lc txt chatId sendUrl =
   catch
     (sendTelegram
+       lc
        sendUrl
        (RequestBodyBS $
         pack $
-        "{\"chat_id\": " ++ show chatId ++ ",\"text\": \"" ++ txt ++ "\"}"))
-    handleException
+        "{\"chat_id\": " ++ show chatId ++ ",\"text\": \"" ++ txt ++ "\"}")) $
+  handleSendException lc
 
 instance EchoBot TelegramBot where
   helpMessage = help . config
