@@ -59,15 +59,20 @@ instance Bot TelegramBot where
     liftIO $ sendText lc txt (chat_id mChat) sendUrl
 
 sendText :: LogConfig -> String -> Integer -> String -> IO ()
-sendText lc txt chatId sendUrl =
-  catch
-    (sendTelegram
-       lc
-       sendUrl
-       (RequestBodyBS $
-        pack $
-        "{\"chat_id\": " ++ show chatId ++ ",\"text\": \"" ++ txt ++ "\"}")) $
-  handleSendException lc
+sendText lc txt chatId sendUrl
+  | txt == keyboard =
+    catch
+      (sendTelegram
+         lc
+         sendUrl
+         [ ("chat_id", show chatId)
+         , ("text", "please select repeats count:")
+         , ("reply_markup", keyboard)
+         ]) $
+    handleSendException lc
+  | otherwise =
+    catch (sendTelegram lc sendUrl [("chat_id", show chatId), ("text", txt)]) $
+    handleSendException lc
 
 instance EchoBot TelegramBot where
   helpMessage = help . config
@@ -82,7 +87,7 @@ instance EchoBot TelegramBot where
 
 keyboard :: String
 keyboard =
-  "\",\"reply_markup\": {\"keyboard\":[[\"1\",\"2\",\"3\",\"4\",\"5\"]],\"resize_keyboard\": true, \"one_time_keyboard\": true}}"
+  "{\"keyboard\":[[\"1\",\"2\",\"3\",\"4\",\"5\"]],\"resize_keyboard\": true, \"one_time_keyboard\": true}"
 
 processUpdates :: Integer -> Either String Updates -> Maybe TelegramMessage
 processUpdates lastId = either (const Nothing) (findLastMessage lastId . result)

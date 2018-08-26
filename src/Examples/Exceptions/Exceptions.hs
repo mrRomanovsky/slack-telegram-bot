@@ -14,7 +14,7 @@ handleGetException LogConfig { logFile = logF
                              } e = do
   let errMess = show e
       logMess =
-        "Warning: server did not send information about new messages: they may be lost: " ++
+        "\nWarning: server did not send information about new messages: they may be lost: " ++
         show e
   when
     (logL <= Warning)
@@ -27,7 +27,7 @@ handlePollException :: LogConfig -> SomeException -> IO B.ByteString
 handlePollException lc e = do
   let errMess = show e
       logMess =
-        "Warning: server did not send information about new messages: they may be lost: " ++
+        "\nWarning: server did not send information about new messages: they may be lost: " ++
         show e
   logFileConsole lc e logMess errMess
   return ""
@@ -36,7 +36,7 @@ handleSendException :: LogConfig -> SomeException -> IO ()
 handleSendException lc e = do
   let errMess = show e
       logMess =
-        "Warning: server did not send information about new messages: they may be lost: " ++
+        "\nWarning: server did not send information about new messages: they may be lost: " ++
         errMess
   logFileConsole lc e logMess errMess
 
@@ -48,4 +48,4 @@ logFileConsole lc e logMess errMess = do
 
 throwIfInterrupt :: SomeException -> String -> IO ()
 throwIfInterrupt e "user interrupt" = print (show e) >> throw e
-throwIfInterrupt e _ = print (show e) >> return ()
+throwIfInterrupt _ _ = return ()

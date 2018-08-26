@@ -7,6 +7,7 @@ module Examples.Slack.Internal.Requests
 
 import Data.ByteString.Char8 (pack)
 import Data.ByteString.Lazy (ByteString)
+import Examples.Requests.RequestBuilders
 import Logging.Config
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS (tlsManagerSettings)
@@ -36,15 +37,19 @@ buildPostRequestSlack url body botToken = do
            ]
        })
 
-postMessageSlack :: LogConfig -> String -> RequestBody -> String -> IO ()
-postMessageSlack lc url body botToken = do
+postMessageSlack :: LogConfig -> String -> [RequestParam] -> String -> IO ()
+postMessageSlack lc method params botToken = do
+  let url = slackUrl ++ method
+      body = buildRequestBody params
   request <- buildPostRequestSlack url body botToken
   sendRequestSlack lc request
   return ()
 
-sendSlack :: LogConfig -> String -> String -> IO ByteString
-sendSlack lc url s = do
-  request <- buildRequestSlack url s
+sendSlack :: LogConfig -> String -> [RequestParam] -> IO ByteString
+sendSlack lc method params = do
+  let url = slackUrl ++ method
+      query = buildQueryParams params
+  request <- buildRequestSlack url query
   sendRequestSlack lc request
 
 sendRequestSlack :: LogConfig -> Request -> IO ByteString
@@ -67,3 +72,5 @@ sendRequestSlack LogConfig {logLevel = logL, logFile = logF} request = do
   manager <- newManager logManager
   response <- httpLbs request manager
   return $ responseBody response
+
+slackUrl = "https://slack.com/api/"

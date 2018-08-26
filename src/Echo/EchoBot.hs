@@ -17,28 +17,23 @@ class Bot b =>
   setRepeatsCount :: Int -> b -> b
   tryGetRepeatsCount :: BotMessage b -> Maybe Int
 
-echoLastMessage :: EchoBot b => BotMessage b -> StateT b IO ()
-echoLastMessage msg = do
-  bot <- get
-  if isWaitingForRepeats bot
-    then maybe (echoMessage msg) (put . (`processRepeats` bot)) $
-         tryGetRepeatsCount msg
-    else echoMessage msg
-
-processRepeats :: EchoBot b => Int -> b -> b
-processRepeats r = setWaitingForRepeats False . setRepeatsCount r
-
 echoMessage :: EchoBot b => BotMessage b -> StateT b IO ()
 echoMessage m = do
   let mId = messId m
   bot <- get
-  case messText m of
-    "/repeat" -> makeWaitingForRepeats mId
-    "/help" ->
-      sendMessageTo mId (helpMessage bot) >> modify (setWaitingForRepeats False)
-    t ->
-      replicateM_ (repeatsCount bot) (sendMessageTo mId t) >>
-      modify (setWaitingForRepeats False)
+  if isWaitingForRepeats bot
+    then maybe (return ()) (put . (`processRepeats` bot)) $ tryGetRepeatsCount m
+    else case messText m of
+           "/repeat" -> makeWaitingForRepeats mId
+           "/help" ->
+             sendMessageTo mId (helpMessage bot) >>
+             modify (setWaitingForRepeats False)
+           t ->
+             replicateM_ (repeatsCount bot) (sendMessageTo mId t) >>
+             modify (setWaitingForRepeats False)
+
+processRepeats :: EchoBot b => Int -> b -> b
+processRepeats r = setWaitingForRepeats False . setRepeatsCount r
 
 makeWaitingForRepeats :: EchoBot b => Id (BotMessage b) -> StateT b IO ()
 makeWaitingForRepeats mId = do

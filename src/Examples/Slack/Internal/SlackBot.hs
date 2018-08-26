@@ -64,8 +64,10 @@ getPollAnswer SlackBot { config = SlackConfig { botToken = t
                        } = do
   answerStr <-
     catch
-      (sendSlack lc "https://slack.com/api/reactions.get" $
-       "token=" ++ t ++ "&channel=" ++ c ++ "&full=true&timestamp=" ++ rTs) $
+      (sendSlack
+         lc
+         "reactions.get"
+         [("token", t), ("channel", c), ("full", "true"), ("timestamp", rTs)]) $
     handlePollException lc
   return (eitherDecode answerStr :: Either String ReactionsResponse)
 
@@ -81,9 +83,7 @@ getLastTextMessage sb@SlackBot {config = c, waitingForRepeatsAnswer = wFr} = do
 getMessages :: SlackConfig -> IO [SlackMessage]
 getMessages SlackConfig {appToken = t, channel = c, logConfig = lc} = do
   messagesStr <-
-    catch
-      (sendSlack lc "https://slack.com/api/channels.history" $
-       "token=" ++ t ++ "&channel=" ++ c) $
+    catch (sendSlack lc "channels.history" [("token", t), ("channel", c)]) $
     handleGetException lc
   let messagesParsed =
         case messagesStr of
@@ -122,12 +122,7 @@ parseMessageToBot (x:xs) (y:ys)
 sendText :: SlackConfig -> String -> IO ()
 sendText sc@SlackConfig {botToken = t, channel = c, logConfig = lc} txt =
   catch
-    (postMessageSlack
-       lc
-       "https://slack.com/api/chat.postMessage"
-       (RequestBodyBS $
-        pack $ "{\"channel\":\"" ++ c ++ "\",\"text\":\"" ++ txt ++ "\"}")
-       t) $
+    (postMessageSlack lc "chat.postMessage" [("channel", c), ("text", txt)] t) $
   handleSendException lc
 
 instance EchoBot SlackBot where
